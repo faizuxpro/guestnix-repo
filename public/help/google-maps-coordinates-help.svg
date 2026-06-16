@@ -1,0 +1,110 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="843" height="793" viewBox="0 0 843 793" role="img" aria-labelledby="title desc">
+  <title id="title">Google Maps coordinates menu example</title>
+  <desc id="desc">A map with a right-click menu showing coordinates at the top.</desc>
+  <defs>
+    <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%" color-interpolation-filters="sRGB">
+      <feDropShadow dx="0" dy="2" stdDeviation="4" flood-color="#0f172a" flood-opacity="0.22"/>
+    </filter>
+    <style>
+      .label { font-family: Arial, Helvetica, sans-serif; fill: #5b7285; font-size: 18px; font-weight: 600; }
+      .small-label { font-family: Arial, Helvetica, sans-serif; fill: #61758a; font-size: 16px; }
+      .hotel { font-family: Arial, Helvetica, sans-serif; fill: #e62bc0; font-size: 20px; font-weight: 500; }
+      .menu { font-family: Arial, Helvetica, sans-serif; fill: #2a2a2a; font-size: 22px; }
+    </style>
+  </defs>
+
+  <rect width="843" height="793" fill="#edf4fd"/>
+  <path d="M0 0h162l-6 29 54 30 58-6 73-42 38 58 34 8 17 54-45 47-137 9-54 51-97 7-60 69L0 307Z" fill="#f6f1e3"/>
+  <path d="M0 526c91-37 152-63 183-78 69-34 131-79 188-137 81-82 152-123 213-124 72-1 159 42 259 130v476H0Z" fill="#cef3df"/>
+  <path d="M665 0h178v793H713c20-70 28-134 23-193-7-82-32-154-74-215-37-54-52-108-46-162 5-50 21-124 49-223Z" fill="#e6edf8"/>
+
+  <path d="M330 -10 236 140 0 219" fill="none" stroke="#fefdf8" stroke-width="45"/>
+  <path d="M330 -10 236 140 0 219" fill="none" stroke="#cfd9e6" stroke-width="6"/>
+  <path d="M0 706c130-24 262-38 395-41 176-3 325 21 448 73" fill="none" stroke="#7d9bbd" stroke-width="52"/>
+  <path d="M0 706c130-24 262-38 395-41 176-3 325 21 448 73" fill="none" stroke="#bfd6ef" stroke-width="36"/>
+  <path d="M0 706c130-24 262-38 395-41 176-3 325 21 448 73" fill="none" stroke="#6f88a8" stroke-width="5"/>
+  <path d="M0 735c130-24 262-38 395-41 176-3 325 21 448 73" fill="none" stroke="#7d9bbd" stroke-width="38"/>
+  <path d="M0 735c130-24 262-38 395-41 176-3 325 21 448 73" fill="none" stroke="#a9cae9" stroke-width="24"/>
+
+  <path d="M389 -22 359 91 381 181 428 302 486 421 598 589 722 793" fill="none" stroke="#aab8c9" stroke-width="78"/>
+  <path d="M389 -22 359 91 381 181 428 302 486 421 598 589 722 793" fill="none" stroke="#dce7f3" stroke-width="62"/>
+  <path d="M389 -22 359 91 381 181 428 302 486 421 598 589 722 793" fill="none" stroke="#869bb3" stroke-width="5"/>
+
+  <g stroke="#d4dfec" stroke-width="7" fill="none">
+    <path d="M561 0 722 209"/>
+    <path d="M589 33 750 241"/>
+    <path d="M621 72 783 284"/>
+    <path d="M628 338 842 292"/>
+    <path d="M641 392 842 361"/>
+    <path d="M676 452 842 424"/>
+    <path d="M690 505 842 477"/>
+    <path d="M87 330 332 260"/>
+    <path d="M75 386 314 318"/>
+    <path d="M63 444 296 378"/>
+  </g>
+
+  <g fill="#eef2f8" stroke="#d6e0ed" stroke-width="2">
+    <rect x="405" y="29" width="64" height="82" transform="rotate(-15 437 70)"/>
+    <rect x="624" y="67" width="43" height="29" transform="rotate(38 645 81)"/>
+    <rect x="663" y="111" width="44" height="31" transform="rotate(38 685 126)"/>
+    <rect x="714" y="177" width="50" height="30" transform="rotate(38 739 192)"/>
+    <rect x="693" y="373" width="78" height="59" transform="rotate(-14 732 402)"/>
+    <rect x="731" y="501" width="83" height="38" transform="rotate(-12 772 520)"/>
+    <rect x="44" y="161" width="85" height="112" transform="rotate(7 86 217)"/>
+    <rect x="107" y="229" width="82" height="100" transform="rotate(7 148 279)"/>
+  </g>
+  <g fill="#fff7e8" stroke="#eadfc8" stroke-width="2">
+    <path d="M0 139h83v84H0Z"/>
+    <path d="M397 177h76v70h-76Z" transform="rotate(-24 435 212)"/>
+    <path d="M661 318h88v75h-88Z" transform="rotate(-16 705 356)"/>
+    <path d="M409 56h56v41h-56Z" transform="rotate(-15 437 76)"/>
+  </g>
+
+  <path d="M329 59c-77 20-154 31-231 33-39 1-72-2-98-9" fill="none" stroke="#ff9a9a" stroke-width="3" stroke-dasharray="3 5"/>
+  <path d="M312 93c-32 78-38 154-19 226 22 83 38 169 48 259 9 82 13 154 10 215" fill="none" stroke="#ff9a9a" stroke-width="3" stroke-dasharray="3 5"/>
+
+  <g transform="rotate(50 628 97)">
+    <text class="label" x="570" y="96">Summit St</text>
+  </g>
+  <g transform="rotate(51 723 194)">
+    <text class="label" x="662" y="196">Reed St</text>
+  </g>
+  <g transform="rotate(50 744 393)">
+    <text class="label" x="686" y="393">St Paul St</text>
+  </g>
+  <text class="small-label" x="88" y="411">MAHEC</text>
+  <text class="small-label" x="88" y="433">Simulation Center</text>
+  <text class="hotel" x="158" y="193">Hampton Inn &amp;</text>
+  <text class="hotel" x="157" y="216">Suites Asheville...</text>
+  <text class="hotel" x="239" y="234" font-size="16">Top rated</text>
+
+  <g>
+    <circle cx="48" cy="203" r="17" fill="#ff5a66" stroke="#fff" stroke-width="4"/>
+    <path d="M39 203h18v13H39Zm4 0v-5h10v5" fill="none" stroke="#fff" stroke-width="3" stroke-linejoin="round"/>
+    <circle cx="317" cy="202" r="16" fill="#ef3fbb" stroke="#fff" stroke-width="4"/>
+    <path d="M308 200h18v10h-18Zm2-5h14v5h-14Zm14 5h3v8h-3Z" fill="#fff"/>
+    <circle cx="650" cy="368" r="16" fill="#ef3fbb" stroke="#fff" stroke-width="4"/>
+    <path d="M641 366h18v10h-18Zm2-5h14v5h-14Zm14 5h3v8h-3Z" fill="#fff"/>
+    <circle cx="64" cy="416" r="17" fill="#7896a9" stroke="#fff" stroke-width="4"/>
+    <path d="M51 414h25l-12-8Zm4 4h18v5H55Z" fill="#fff"/>
+    <circle cx="192" cy="679" r="13" fill="#477dcb" stroke="#fff" stroke-width="3"/>
+    <text x="184" y="684" font-family="Arial, Helvetica, sans-serif" font-size="12" fill="#fff" font-weight="700">40</text>
+    <circle cx="373" cy="717" r="13" fill="#477dcb" stroke="#fff" stroke-width="3"/>
+    <text x="365" y="722" font-family="Arial, Helvetica, sans-serif" font-size="12" fill="#fff" font-weight="700">40</text>
+  </g>
+
+  <g filter="url(#shadow)">
+    <rect x="321" y="206" width="268" height="500" rx="7" fill="#fff"/>
+    <text class="menu" x="342" y="246">35.561646, -82.541493</text>
+    <text class="menu" x="342" y="288">Share this location</text>
+    <text class="menu" x="342" y="331">Directions from here</text>
+    <text class="menu" x="342" y="375">Directions to here</text>
+    <text class="menu" x="342" y="419">What's here?</text>
+    <text class="menu" x="342" y="462">Search nearby</text>
+    <text class="menu" x="342" y="506">Print</text>
+    <text class="menu" x="342" y="549">Add a missing place</text>
+    <text class="menu" x="342" y="592">Add your business</text>
+    <text class="menu" x="342" y="636">Report a data problem</text>
+    <text class="menu" x="342" y="679">Measure distance</text>
+  </g>
+</svg>

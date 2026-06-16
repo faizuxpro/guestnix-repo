@@ -1,0 +1,187 @@
+.screen {
+  --gn-loader-bg: #002927;
+  --gn-loader-fg: #ffffff;
+  --gn-loader-accent: #e8c36a;
+  --gn-loader-size: 112px;
+  --gn-loader-glow-opacity: 1;
+  --gn-loader-heading-font: "Fraunces", Georgia, serif;
+  --gn-loader-body-font: "Montserrat", system-ui, sans-serif;
+
+  position: relative;
+  min-height: 100dvh;
+  width: 100%;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  padding: clamp(24px, 6vw, 56px);
+  background:
+    linear-gradient(160deg, color-mix(in srgb, var(--gn-loader-bg) 92%, #ffffff 8%), var(--gn-loader-bg));
+  color: var(--gn-loader-fg);
+  font-family: var(--gn-loader-body-font);
+  isolation: isolate;
+}
+
+.screen::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background-image:
+    linear-gradient(color-mix(in srgb, var(--gn-loader-fg) 8%, transparent) 1px, transparent 1px),
+    linear-gradient(90deg, color-mix(in srgb, var(--gn-loader-fg) 8%, transparent) 1px, transparent 1px);
+  background-size: 36px 36px;
+  mask-image: radial-gradient(circle at center, black, transparent 72%);
+  opacity: 0.24;
+}
+
+.preview {
+  min-height: 300px;
+  border-radius: 8px;
+}
+
+.inner {
+  display: grid;
+  width: min(100%, 420px);
+  justify-items: center;
+  gap: 18px;
+  text-align: center;
+}
+
+.logo {
+  max-width: min(180px, 58vw);
+  max-height: 72px;
+  object-fit: contain;
+  filter: drop-shadow(0 12px 28px rgba(0, 0, 0, 0.18));
+}
+
+.animation {
+  position: relative;
+  display: grid;
+  min-height: calc(var(--gn-loader-size) + 12px);
+  place-items: center;
+  isolation: isolate;
+}
+
+.animation::before {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  z-index: 0;
+  width: min(calc(var(--gn-loader-size) * 2.55), 78vw);
+  aspect-ratio: 1;
+  border-radius: 999px;
+  background: radial-gradient(
+    circle,
+    color-mix(in srgb, var(--gn-loader-accent) 32%, transparent) 0%,
+    color-mix(in srgb, var(--gn-loader-accent) 18%, transparent) 36%,
+    transparent 72%
+  );
+  opacity: var(--gn-loader-glow-opacity);
+  pointer-events: none;
+  transform: translate(-50%, -50%);
+}
+
+.copy {
+  display: grid;
+  gap: 8px;
+}
+
+.title {
+  margin: 0;
+  overflow-wrap: anywhere;
+  font-family: var(--gn-loader-heading-font);
+  font-size: clamp(1.35rem, 5vw, 2.25rem);
+  font-weight: 700;
+  letter-spacing: 0;
+  line-height: 1.08;
+}
+
+.subtitle {
+  margin: 0;
+  overflow-wrap: anywhere;
+  color: color-mix(in srgb, var(--gn-loader-fg) 78%, transparent);
+  font-size: clamp(0.88rem, 2.6vw, 1rem);
+  font-weight: 500;
+  line-height: 1.45;
+}
+
+.spinner {
+  position: relative;
+  z-index: 1;
+  width: var(--gn-loader-size);
+  height: var(--gn-loader-size);
+  border-radius: 999px;
+  border: clamp(3px, calc(var(--gn-loader-size) * 0.08), 12px) solid color-mix(in srgb, var(--gn-loader-fg) 18%, transparent);
+  border-top-color: var(--gn-loader-accent);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--gn-loader-fg) 8%, transparent);
+  animation: loaderSpin 0.9s linear infinite;
+}
+
+.dots {
+  position: relative;
+  z-index: 1;
+  display: inline-flex;
+  align-items: center;
+  gap: calc(var(--gn-loader-size) * 0.09);
+}
+
+.dots span {
+  width: calc(var(--gn-loader-size) * 0.125);
+  height: calc(var(--gn-loader-size) * 0.125);
+  border-radius: 999px;
+  background: var(--gn-loader-accent);
+  animation: loaderDot 1s ease-in-out infinite;
+}
+
+.dots span:nth-child(2) {
+  animation-delay: 0.14s;
+}
+
+.dots span:nth-child(3) {
+  animation-delay: 0.28s;
+}
+
+.presetAsset {
+  position: relative;
+  z-index: 1;
+  display: block;
+  width: min(calc(var(--gn-loader-size) * 1.78), 72vw);
+  height: var(--gn-loader-size);
+  object-fit: contain;
+}
+
+.customAsset {
+  position: relative;
+  z-index: 1;
+  display: block;
+  width: min(var(--gn-loader-size), 62vw);
+  height: var(--gn-loader-size);
+  object-fit: contain;
+}
+
+@keyframes loaderSpin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes loaderDot {
+  0%,
+  100% {
+    opacity: 0.45;
+    transform: translateY(0);
+  }
+  50% {
+    opacity: 1;
+    transform: translateY(-9px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .spinner,
+  .dots span {
+    animation-duration: 0.001ms;
+    animation-iteration-count: 1;
+  }
+}

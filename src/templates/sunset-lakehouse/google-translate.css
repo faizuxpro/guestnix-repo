@@ -1,0 +1,55 @@
+/*
+ * Hide every visible piece of the Google Translate widget — we surface our
+ * own LanguagePicker that drives the hidden <select class="goog-te-combo">.
+ *
+ * Google injects these elements directly into the document; loading order is
+ * non-deterministic, so we keep specificity high and use !important where the
+ * widget sets inline styles.
+ */
+
+/* Top banner (the iframe with the "Original | Translated" controls) */
+.skiptranslate,
+iframe.goog-te-banner-frame,
+.goog-te-banner-frame.skiptranslate {
+  display: none !important;
+  visibility: hidden !important;
+}
+
+/* When the banner is hidden Google still pushes <body> down via inline style;
+   undo that. */
+body {
+  top: 0 !important;
+  position: static !important;
+}
+
+/* Hover tooltip ("Translated to: …") */
+.goog-tooltip,
+.goog-tooltip:hover,
+.goog-text-highlight {
+  display: none !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+/* The dropdown widget itself — keep it functional but invisible so we can
+   drive it via JS. Visually hidden, accessibility hidden. */
+#google_translate_element {
+  position: fixed;
+  left: -99999px;
+  top: -99999px;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+/* Defense against long translated strings inside pills/badges that have
+   fixed widths in the template. */
+.goog-te-spinner-pos,
+.goog-logo-link,
+.goog-te-gadget {
+  font-size: 0 !important;
+}
+.goog-te-gadget * {
+  font-size: 0 !important;
+}
