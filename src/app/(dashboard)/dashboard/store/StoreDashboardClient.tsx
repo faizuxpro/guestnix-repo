@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState, type FormEvent } from "react";
+import { useEffect, useMemo, useRef, useState, type FormEvent } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Icon } from "@iconify/react";
@@ -8,6 +8,7 @@ import { toast } from "sonner";
 import {
   AlertCircle,
   ArrowDown,
+  ArrowRight,
   ArrowUp,
   CalendarClock,
   CheckCircle2,
@@ -75,6 +76,12 @@ import { toastApiError } from "@/lib/toast-error";
 import { cn } from "@/lib/utils";
 
 type StoreTab = "requests" | "catalogue" | "payments";
+type RequestPriorityFilter =
+  | "all"
+  | "open"
+  | "needs_review"
+  | "proof_ready"
+  | "ready_to_deliver";
 
 type StoreTabAccent = {
   bg: string;
@@ -144,6 +151,37 @@ const PAYMENT_STATUSES = [
   "proof_submitted",
   "external_paid",
   "not_required",
+];
+const REQUEST_PRIORITY_FILTERS: Array<{
+  value: RequestPriorityFilter;
+  label: string;
+  description: string;
+}> = [
+  {
+    value: "all",
+    label: "All tickets",
+    description: "Every request in the queue.",
+  },
+  {
+    value: "open",
+    label: "Open",
+    description: "Still moving through the workflow.",
+  },
+  {
+    value: "needs_review",
+    label: "Needs review",
+    description: "Approve or cancel these first.",
+  },
+  {
+    value: "proof_ready",
+    label: "Proof ready",
+    description: "Payment proof is waiting.",
+  },
+  {
+    value: "ready_to_deliver",
+    label: "Ready to deliver",
+    description: "Payment is settled.",
+  },
 ];
 const STORE_IMAGE_ACCEPT = "image/jpeg,image/png,image/webp,image/gif";
 
@@ -481,39 +519,39 @@ function paymentStatusCopy(status: string) {
 
 function requestStatusClasses(status: string) {
   if (status === "new") {
-    return "border-amber-200 bg-amber-50 text-amber-800 dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-200";
+    return "border-amber-200 bg-amber-50 text-amber-900 dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-100";
   }
   if (status === "accepted") {
-    return "border-sky-200 bg-sky-50 text-sky-800 dark:border-sky-500/30 dark:bg-sky-500/10 dark:text-sky-200";
+    return "border-primary/20 bg-primary/5 text-primary dark:border-primary/25 dark:bg-primary/10 dark:text-primary";
   }
   if (status === "fulfilled") {
-    return "border-emerald-200 bg-emerald-50 text-emerald-800 dark:border-emerald-500/30 dark:bg-emerald-500/10 dark:text-emerald-200";
+    return "border-emerald-200 bg-emerald-50 text-emerald-900 dark:border-emerald-500/30 dark:bg-emerald-500/10 dark:text-emerald-100";
   }
   if (status === "cancelled") {
-    return "border-rose-200 bg-rose-50 text-rose-800 dark:border-rose-500/30 dark:bg-rose-500/10 dark:text-rose-200";
+    return "border-border bg-muted text-muted-foreground dark:bg-muted/40";
   }
   return "border-border bg-muted text-muted-foreground";
 }
 
 function requestStatusDotClasses(status: string) {
   if (status === "new") return "bg-amber-500";
-  if (status === "accepted") return "bg-sky-500";
+  if (status === "accepted") return "bg-primary";
   if (status === "fulfilled") return "bg-emerald-500";
-  if (status === "cancelled") return "bg-rose-500";
+  if (status === "cancelled") return "bg-muted-foreground";
   return "bg-muted-foreground";
 }
 
 function paymentStatusClasses(status: string) {
   if (status === "proof_submitted") {
-    return "border-violet-200 bg-violet-50 text-violet-800 dark:border-violet-500/30 dark:bg-violet-500/10 dark:text-violet-200";
+    return "border-amber-200 bg-amber-50 text-amber-900 dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-100";
   }
   if (status === "external_paid") {
-    return "border-emerald-200 bg-emerald-50 text-emerald-800 dark:border-emerald-500/30 dark:bg-emerald-500/10 dark:text-emerald-200";
+    return "border-emerald-200 bg-emerald-50 text-emerald-900 dark:border-emerald-500/30 dark:bg-emerald-500/10 dark:text-emerald-100";
   }
   if (status === "not_required") {
     return "border-slate-200 bg-slate-50 text-slate-700 dark:border-slate-500/30 dark:bg-slate-500/10 dark:text-slate-200";
   }
-  return "border-orange-200 bg-orange-50 text-orange-800 dark:border-orange-500/30 dark:bg-orange-500/10 dark:text-orange-200";
+  return "border-border bg-muted/70 text-muted-foreground";
 }
 
 function initialsForName(name: string) {
@@ -546,6 +584,31 @@ function requestItemSummary(
   const itemCount = request.itemCount ?? 0;
   if (itemCount === 1) return "1 requested item";
   return `${itemCount} requested items`;
+}
+
+function isOpenRequest(request: Pick<RequestSummary, "status">) {
+  return request.status !== "fulfilled" && request.status !== "cancelled";
+}
+
+function isReadyToDeliver(
+  request: Pick<RequestSummary, "status" | "paymentStatus">
+) {
+  return (
+    request.status === "accepted" &&
+    (request.paymentStatus === "external_paid" ||
+      request.paymentStatus === "not_required")
+  );
+}
+
+function matchesPriorityFilter(
+  request: RequestSummary,
+  filter: RequestPriorityFilter
+) {
+  if (filter === "all") return true;
+  if (filter === "open") return isOpenRequest(request);
+  if (filter === "needs_review") return request.status === "new";
+  if (filter === "proof_ready") return request.paymentStatus === "proof_submitted";
+  return isReadyToDeliver(request);
 }
 
 function requestNextAction(
@@ -602,10 +665,10 @@ function actionToneClasses(tone: ReturnType<typeof requestNextAction>["tone"]) {
     return "border-emerald-200 bg-emerald-50 text-emerald-950 dark:border-emerald-500/30 dark:bg-emerald-500/10 dark:text-emerald-100";
   }
   if (tone === "ready") {
-    return "border-sky-200 bg-sky-50 text-sky-950 dark:border-sky-500/30 dark:bg-sky-500/10 dark:text-sky-100";
+    return "border-primary/20 bg-primary/5 text-primary dark:border-primary/25 dark:bg-primary/10 dark:text-primary";
   }
   if (tone === "waiting") {
-    return "border-orange-200 bg-orange-50 text-orange-950 dark:border-orange-500/30 dark:bg-orange-500/10 dark:text-orange-100";
+    return "border-border bg-muted/50 text-foreground";
   }
   if (tone === "muted") {
     return "border-border bg-muted/40 text-muted-foreground";
@@ -711,6 +774,8 @@ export function StoreDashboardClient({
   const [catalogItems, setCatalogItems] = useState<CatalogItem[]>(
     () => initialData?.catalogItems ?? []
   );
+  const [priorityFilter, setPriorityFilter] =
+    useState<RequestPriorityFilter>("open");
   const [statusFilter, setStatusFilter] = useState("all");
   const [guidebookFilter, setGuidebookFilter] = useState("all");
   const [loadingRequests, setLoadingRequests] = useState(false);
@@ -756,6 +821,7 @@ export function StoreDashboardClient({
   }, [requests]);
 
   const filteredRequests = requests.filter((request) => {
+    if (!matchesPriorityFilter(request, priorityFilter)) return false;
     if (statusFilter !== "all" && request.status !== statusFilter) return false;
     if (guidebookFilter !== "all" && request.guidebookId !== guidebookFilter) {
       return false;
@@ -769,18 +835,18 @@ export function StoreDashboardClient({
     const proofReady = requests.filter(
       (request) => request.paymentStatus === "proof_submitted"
     ).length;
-    const readyToDeliver = requests.filter(
-      (request) =>
-        request.status === "accepted" &&
-        (request.paymentStatus === "external_paid" ||
-          request.paymentStatus === "not_required")
-    ).length;
-    const open = requests.filter(
-      (request) =>
-        request.status !== "fulfilled" && request.status !== "cancelled"
-    ).length;
+    const readyToDeliver = requests.filter(isReadyToDeliver).length;
+    const open = requests.filter(isOpenRequest).length;
     return { needsReview, proofReady, readyToDeliver, open };
   }, [requests]);
+
+  const priorityCounts: Record<RequestPriorityFilter, number> = {
+    all: requests.length,
+    open: requestStats.open,
+    needs_review: requestStats.needsReview,
+    proof_ready: requestStats.proofReady,
+    ready_to_deliver: requestStats.readyToDeliver,
+  };
 
   const tabCounts = useMemo(
     () => ({
@@ -1030,10 +1096,11 @@ export function StoreDashboardClient({
 
   function addPaymentMethod(type: StorePaymentMethodType) {
     const meta = getStorePaymentMethodMeta(type);
+    const id = makePaymentMethodId();
     setPaymentMethods((methods) => [
       ...methods,
       {
-        id: makePaymentMethodId(),
+        id,
         type,
         label: meta.label,
         value: "",
@@ -1042,6 +1109,7 @@ export function StoreDashboardClient({
         orderIndex: methods.length,
       },
     ]);
+    return id;
   }
 
   function updatePaymentMethod(
@@ -1145,17 +1213,54 @@ export function StoreDashboardClient({
         value="requests"
         className="m-0 min-h-0 flex-1 overflow-y-auto p-5"
       >
-        <div className="space-y-5">
-          <section className="rounded-lg border border-border bg-card p-4 shadow-sm">
-            <div className="flex flex-wrap items-start justify-between gap-3">
-              <div>
-                <h2 className="text-lg font-semibold tracking-tight">
-                  Request queue
-                </h2>
-                <p className="mt-1 text-sm text-muted-foreground">
-                  {requestStats.open} open requests across {requests.length} total.
-                </p>
+        <div className="mx-auto flex max-w-[1600px] flex-col gap-5">
+          <section className="grid gap-4 border-b border-border/70 pb-5 xl:grid-cols-[minmax(0,1fr)_auto] xl:items-end">
+            <div className="min-w-0">
+              <div className="flex flex-wrap items-center gap-2">
+                <Badge variant="outline" className="h-6 border-primary/20 bg-primary/5 text-primary">
+                  {requestStats.open} open
+                </Badge>
+                <Badge variant="outline" className="h-6">
+                  {requests.length} total
+                </Badge>
               </div>
+              <h2 className="mt-3 text-2xl font-semibold tracking-tight">
+                Request command queue
+              </h2>
+              <p className="mt-1 max-w-2xl text-sm leading-6 text-muted-foreground">
+                Review guest extras, confirm proof, and move paid requests to
+                delivery from one focused queue.
+              </p>
+            </div>
+
+            <div className="flex flex-wrap items-center gap-2 xl:justify-end">
+              <select
+                className="h-9 min-w-[160px] rounded-md border border-input bg-background px-2 text-sm"
+                value={statusFilter}
+                onChange={(event) => setStatusFilter(event.target.value)}
+                aria-label="Status"
+              >
+                {REQUEST_STATUSES.map((status) => (
+                  <option key={status} value={status}>
+                    {status === "all"
+                      ? "All states"
+                      : requestStatusCopy(status).label}
+                  </option>
+                ))}
+              </select>
+              <select
+                className="h-9 min-w-[190px] rounded-md border border-input bg-background px-2 text-sm"
+                value={guidebookFilter}
+                onChange={(event) => setGuidebookFilter(event.target.value)}
+                aria-label="Guidebook"
+              >
+                <option value="all">All guidebooks</option>
+                {guidebookOptions.map((guidebook) => (
+                  <option key={guidebook.id} value={guidebook.id}>
+                    {guidebook.title}
+                  </option>
+                ))}
+              </select>
               <Button
                 type="button"
                 variant="outline"
@@ -1166,82 +1271,54 @@ export function StoreDashboardClient({
                 Refresh
               </Button>
             </div>
-
-            <div className="mt-4 grid gap-3 sm:grid-cols-3">
-              <RequestQueueStat
-                label="Needs review"
-                value={requestStats.needsReview}
-                tone="attention"
-              />
-              <RequestQueueStat
-                label="Proof received"
-                value={requestStats.proofReady}
-                tone="payment"
-              />
-              <RequestQueueStat
-                label="Ready to deliver"
-                value={requestStats.readyToDeliver}
-                tone="ready"
-              />
-            </div>
-
-            <div className="mt-4 flex flex-col gap-2 md:flex-row md:items-center">
-              <div className="grid flex-1 gap-2 sm:grid-cols-2">
-                <select
-                  className="h-9 rounded-md border border-input bg-background px-2 text-sm"
-                  value={statusFilter}
-                  onChange={(event) => setStatusFilter(event.target.value)}
-                  aria-label="Status"
-                >
-                  {REQUEST_STATUSES.map((status) => (
-                    <option key={status} value={status}>
-                      {status === "all"
-                        ? "All request states"
-                        : requestStatusCopy(status).label}
-                    </option>
-                  ))}
-                </select>
-                <select
-                  className="h-9 min-w-0 rounded-md border border-input bg-background px-2 text-sm"
-                  value={guidebookFilter}
-                  onChange={(event) => setGuidebookFilter(event.target.value)}
-                  aria-label="Guidebook"
-                >
-                  <option value="all">All guidebooks</option>
-                  {guidebookOptions.map((guidebook) => (
-                    <option key={guidebook.id} value={guidebook.id}>
-                      {guidebook.title}
-                    </option>
-                  ))}
-                </select>
-              </div>
-              <p className="text-xs text-muted-foreground">
-                {filteredRequests.length} shown
-              </p>
-            </div>
-
-            <div className="mt-4">
-              {loadingRequests ? (
-                <RequestQueueSkeleton />
-              ) : filteredRequests.length === 0 ? (
-                <div className="grid min-h-[320px] place-items-center rounded-lg border border-dashed border-border bg-muted/20 p-8 text-center">
-                  <div>
-                    <MessageSquare className="mx-auto h-8 w-8 text-muted-foreground/70" />
-                    <p className="mt-3 font-medium">No matching requests.</p>
-                    <p className="mt-1 text-sm text-muted-foreground">
-                      No requests are in this queue view right now.
-                    </p>
-                  </div>
-                </div>
-              ) : (
-                <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
-                  {filteredRequests.map((request) => (
-                    <RequestQueueCard key={request.id} request={request} />
-                  ))}
-                </div>
-              )}
-            </div>
           </section>
+
+          <div className="grid gap-2 md:grid-cols-5">
+            {REQUEST_PRIORITY_FILTERS.map((filter) => (
+              <RequestQueueFocusButton
+                key={filter.value}
+                label={filter.label}
+                description={filter.description}
+                value={priorityCounts[filter.value]}
+                active={priorityFilter === filter.value}
+                onClick={() => setPriorityFilter(filter.value)}
+              />
+            ))}
+          </div>
+
+          <section className="overflow-hidden rounded-lg border border-border bg-background">
+            <div className="grid gap-2 border-b border-border/70 bg-muted/25 px-4 py-3 text-xs font-semibold uppercase text-muted-foreground lg:grid-cols-[minmax(220px,1.1fr)_minmax(280px,1.5fr)_150px_170px]">
+              <span>Guest</span>
+              <span>Request</span>
+              <span className="hidden lg:block">Timing</span>
+              <span className="hidden text-right lg:block">Action</span>
+            </div>
+
+            {loadingRequests ? (
+              <RequestQueueSkeleton />
+            ) : filteredRequests.length === 0 ? (
+              <div className="grid min-h-[320px] place-items-center border-dashed border-border bg-muted/10 p-8 text-center">
+                <div>
+                  <MessageSquare className="mx-auto h-8 w-8 text-muted-foreground/70" />
+                  <p className="mt-3 font-medium">No matching requests.</p>
+                  <p className="mt-1 text-sm text-muted-foreground">
+                    No requests are in this queue view right now.
+                  </p>
+                </div>
+              </div>
+            ) : (
+              <div className="divide-y divide-border/70">
+                {filteredRequests.map((request) => (
+                  <RequestQueueRow key={request.id} request={request} />
+                ))}
+              </div>
+            )}
+          </section>
+
+          <p className="text-xs text-muted-foreground">
+            Showing {filteredRequests.length} of {requests.length} request
+            tickets.
+          </p>
         </div>
       </TabsContent>
 
@@ -1383,14 +1460,14 @@ export function StoreDashboardClient({
         value="payments"
         className="m-0 min-h-0 flex-1 overflow-y-auto p-5"
       >
-        <div className="mx-auto grid w-full max-w-3xl gap-5">
+        <div className="mx-auto grid w-full max-w-5xl gap-5">
           <div>
             <h2 className="text-lg font-semibold tracking-tight">
               Payment setup
             </h2>
-            <p className="mt-1 text-sm text-muted-foreground">
-              Add reusable payment methods once, then attach them to each guidebook
-              store.
+            <p className="mt-1 max-w-2xl text-sm leading-6 text-muted-foreground">
+              Reusable manual payment details for approved Store requests,
+              selected per guidebook Store.
             </p>
           </div>
           <PaymentSettingsPanel
@@ -1491,7 +1568,7 @@ function PaymentSettingsPanel({
   loading: boolean;
   saving: boolean;
   setPaymentInstructions: (value: string) => void;
-  addPaymentMethod: (type: StorePaymentMethodType) => void;
+  addPaymentMethod: (type: StorePaymentMethodType) => string;
   updatePaymentMethod: (
     methodId: string,
     patch: Partial<StorePaymentMethod>
@@ -1503,206 +1580,561 @@ function PaymentSettingsPanel({
   const dirty =
     paymentInstructions !== savedPaymentInstructions ||
     JSON.stringify(paymentMethods) !== JSON.stringify(savedPaymentMethods);
+  const activeMethods = paymentMethods.filter((method) => method.active).length;
+  const hiddenMethods = paymentMethods.length - activeMethods;
+  const detailedMethods = paymentMethods.filter(
+    (method) => method.value.trim() || method.instructions?.trim()
+  ).length;
+  const setupStatus = loading
+    ? "Loading setup"
+    : saving
+      ? "Saving setup"
+      : dirty
+        ? "Unsaved changes"
+        : "Setup saved";
+  const setupDescription = loading
+    ? "Fetching your saved payment options."
+    : dirty
+      ? "Save changes before guests rely on these details."
+      : paymentMethods.length > 0
+        ? "These methods are ready to attach inside guidebook Store editors."
+        : "Add at least one method to start taking manual payments.";
+  const [editingMethodId, setEditingMethodId] = useState<string | null>(null);
+  const [highlightedMethodId, setHighlightedMethodId] = useState<string | null>(
+    null
+  );
+  const methodRefs = useRef<Record<string, HTMLDivElement | null>>({});
+  const currentEditingMethodId =
+    editingMethodId &&
+    paymentMethods.some((method) => method.id === editingMethodId)
+      ? editingMethodId
+      : null;
+  const currentHighlightedMethodId =
+    highlightedMethodId &&
+    paymentMethods.some((method) => method.id === highlightedMethodId)
+      ? highlightedMethodId
+      : null;
+
+  useEffect(() => {
+    if (!currentHighlightedMethodId) return;
+    methodRefs.current[currentHighlightedMethodId]?.scrollIntoView({
+      block: "center",
+      behavior: "smooth",
+    });
+  }, [currentHighlightedMethodId, paymentMethods.length]);
+
+  function handleAddPaymentMethod(type: StorePaymentMethodType) {
+    const methodId = addPaymentMethod(type);
+    setEditingMethodId(null);
+    setHighlightedMethodId(methodId);
+  }
+
+  function handleEditPaymentMethod(methodId: string) {
+    setEditingMethodId(methodId);
+    setHighlightedMethodId(null);
+  }
+
+  function handleRemovePaymentMethod(methodId: string) {
+    if (editingMethodId === methodId) setEditingMethodId(null);
+    if (highlightedMethodId === methodId) setHighlightedMethodId(null);
+    removePaymentMethod(methodId);
+  }
 
   return (
-    <section className="grid gap-3 rounded-lg border border-border bg-card p-4">
-      <div className="flex items-start gap-2">
-        <CreditCard className="mt-0.5 h-4 w-4 text-primary" />
-        <div>
-          <h2 className="text-sm font-semibold">Payment setup</h2>
-          <p className="mt-1 text-xs leading-5 text-muted-foreground">
-            Guests see this after you approve a paid Store request. Guestnix does
-            not collect the payment. Select the relevant methods inside each
-            guidebook&apos;s Store editor.
-          </p>
+    <section className="grid gap-4">
+      <div className="overflow-hidden rounded-lg border border-border bg-card">
+        <div className="flex flex-col gap-3 border-b border-border/70 p-4 lg:flex-row lg:items-start lg:justify-between">
+          <div className="min-w-0">
+            <div className="flex flex-wrap items-center gap-2">
+              <WalletCards className="h-4 w-4 text-primary" />
+              <h3 className="text-base font-semibold tracking-tight">
+                Payment methods
+              </h3>
+              {dirty ? (
+                <Badge
+                  variant="outline"
+                  className="h-6 border-amber-200 bg-amber-50 text-amber-900 dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-100"
+                >
+                  Unsaved
+                </Badge>
+              ) : null}
+            </div>
+            <p className="mt-1 max-w-2xl text-sm leading-6 text-muted-foreground">
+              Guestnix does not collect payment. Approved paid requests show
+              selected methods and collect proof for host confirmation.
+            </p>
+            {paymentMethods.length > 0 ? (
+              <div className="mt-2 flex flex-wrap gap-2">
+                <Badge variant="outline" className="h-6">
+                  {paymentMethods.length} total
+                </Badge>
+                <Badge
+                  variant="outline"
+                  className="h-6 border-emerald-200 bg-emerald-50 text-emerald-900 dark:border-emerald-500/30 dark:bg-emerald-500/10 dark:text-emerald-100"
+                >
+                  {activeMethods} visible
+                </Badge>
+                {hiddenMethods > 0 ? (
+                  <Badge variant="outline" className="h-6">
+                    {hiddenMethods} hidden
+                  </Badge>
+                ) : null}
+                <Badge variant="outline" className="h-6">
+                  {detailedMethods} with details
+                </Badge>
+              </div>
+            ) : null}
+          </div>
+
+          <div className="flex flex-wrap items-center gap-2 lg:justify-end">
+            <span
+              className={cn(
+                "inline-flex h-8 items-center rounded-md border px-2.5 text-xs font-medium",
+                dirty
+                  ? "border-amber-200 bg-amber-50 text-amber-900 dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-100"
+                  : "border-border bg-background text-muted-foreground"
+              )}
+            >
+              {setupStatus}
+            </span>
+            <Button
+              type="button"
+              size="sm"
+              disabled={loading || saving || !dirty}
+              onClick={() => void savePaymentSettings()}
+            >
+              <Save className="mr-1.5 h-3.5 w-3.5" />
+              {saving ? "Saving" : "Save"}
+            </Button>
+            <AddPaymentMethodButton
+              disabled={loading || saving}
+              onAdd={handleAddPaymentMethod}
+            />
+          </div>
+        </div>
+
+        <div className="grid gap-2 p-3">
+          {paymentMethods.length === 0 ? (
+            <div className="rounded-md border border-dashed border-border bg-muted/20 px-4 py-8 text-center">
+              <WalletCards className="mx-auto h-8 w-8 text-muted-foreground/70" />
+              <p className="mt-3 text-sm font-medium">
+                No payment methods saved yet
+              </p>
+              <p className="mx-auto mt-1 max-w-md text-xs leading-5 text-muted-foreground">
+                Use Add method in the top-right to create the first option.
+              </p>
+            </div>
+          ) : (
+            paymentMethods.map((method, index) => (
+              <PaymentMethodRow
+                key={method.id}
+                rowRef={(node) => {
+                  methodRefs.current[method.id] = node;
+                }}
+                method={method}
+                index={index}
+                count={paymentMethods.length}
+                disabled={loading || saving}
+                editing={currentEditingMethodId === method.id}
+                highlighted={currentHighlightedMethodId === method.id}
+                onEdit={() => handleEditPaymentMethod(method.id)}
+                onDoneEdit={() => setEditingMethodId(null)}
+                onChange={(patch) => updatePaymentMethod(method.id, patch)}
+                onRemove={() => handleRemovePaymentMethod(method.id)}
+                onMove={(direction) => movePaymentMethod(index, direction)}
+              />
+            ))
+          )}
         </div>
       </div>
 
-      <div className="grid gap-2">
-        {paymentMethods.length === 0 ? (
-          <p className="rounded-md border border-dashed border-border p-3 text-xs leading-5 text-muted-foreground">
-            Add payment methods hosts can reuse across guidebooks, then choose
-            the right ones from each guidebook&apos;s Store editor.
+      <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_280px]">
+        <div className="rounded-lg border border-border bg-card p-4">
+          <div className="mb-3 flex items-start gap-2">
+            <FileText className="mt-0.5 h-4 w-4 text-primary" />
+            <div>
+              <Label htmlFor="store-payment-instructions">
+                Shared payment note
+              </Label>
+              <p className="mt-1 text-xs leading-5 text-muted-foreground">
+                Optional note shown with every selected method, such as what to
+                write in the memo.
+              </p>
+            </div>
+          </div>
+          <Textarea
+            id="store-payment-instructions"
+            value={paymentInstructions}
+            maxLength={2000}
+            disabled={loading}
+            onChange={(event) => setPaymentInstructions(event.target.value)}
+            placeholder="Example: include your request code in the payment memo so we can match your payment quickly."
+            className="min-h-28 resize-y text-sm"
+          />
+          <p className="mt-2 text-right text-[11px] text-muted-foreground">
+            {paymentInstructions.length}/2000
           </p>
-        ) : (
-          paymentMethods.map((method, index) => (
-            <PaymentMethodRow
-              key={method.id}
-              method={method}
-              index={index}
-              count={paymentMethods.length}
-              disabled={loading || saving}
-              onChange={(patch) => updatePaymentMethod(method.id, patch)}
-              onRemove={() => removePaymentMethod(method.id)}
-              onMove={(direction) => movePaymentMethod(index, direction)}
-            />
-          ))
-        )}
-        <AddPaymentMethodButton
-          disabled={loading || saving}
-          onAdd={addPaymentMethod}
-        />
-      </div>
+        </div>
 
-      <Textarea
-        value={paymentInstructions}
-        maxLength={2000}
-        disabled={loading}
-        onChange={(event) => setPaymentInstructions(event.target.value)}
-        placeholder={
-          "Optional note shown with selected methods, e.g. include your request code in the payment memo."
-        }
-        className="min-h-24 resize-y text-sm"
-      />
-
-      <div className="flex items-center justify-between gap-3">
-        <span className="text-xs text-muted-foreground">
-          {loading ? "Loading..." : dirty ? "Unsaved changes" : "Saved"}
-        </span>
-        <Button
-          type="button"
-          size="sm"
-          disabled={loading || saving || !dirty}
-          onClick={() => void savePaymentSettings()}
-        >
-          <Save className="mr-1.5 h-3.5 w-3.5" />
-          {saving ? "Saving" : "Save setup"}
-        </Button>
+        <div className="rounded-lg border border-border bg-card p-4">
+          <div className="flex items-start gap-2">
+            <CreditCard className="mt-0.5 h-4 w-4 text-primary" />
+            <div>
+              <p className="text-sm font-semibold">Manual payment flow</p>
+              <p className="mt-1 text-xs leading-5 text-muted-foreground">
+                Select the saved methods each guidebook Store can offer after
+                host approval.
+              </p>
+            </div>
+          </div>
+          <p className="mt-3 rounded-md border border-border/70 bg-background px-3 py-2 text-xs leading-5 text-muted-foreground">
+            {setupDescription}
+          </p>
+        </div>
       </div>
     </section>
   );
 }
 
 function PaymentMethodRow({
+  rowRef,
   method,
   index,
   count,
   disabled,
+  editing,
+  highlighted,
+  onEdit,
+  onDoneEdit,
   onChange,
   onRemove,
   onMove,
 }: {
+  rowRef: (node: HTMLDivElement | null) => void;
   method: StorePaymentMethod;
   index: number;
   count: number;
   disabled: boolean;
+  editing: boolean;
+  highlighted: boolean;
+  onEdit: () => void;
+  onDoneEdit: () => void;
   onChange: (patch: Partial<StorePaymentMethod>) => void;
   onRemove: () => void;
   onMove: (direction: -1 | 1) => void;
 }) {
   const [pickerOpen, setPickerOpen] = useState(false);
   const meta = getStorePaymentMethodMeta(method.type);
+  const fieldId = method.id.replace(/[^a-zA-Z0-9_-]/g, "-");
+  const displayLabel = method.label.trim() || meta.label;
+  const paymentDetail = method.value.trim();
+  const instructions = method.instructions?.trim() ?? "";
+  const missingDetail = !paymentDetail;
+
+  if (!editing) {
+    return (
+      <div
+        ref={rowRef}
+        className={cn(
+          "rounded-md border border-border bg-background transition-colors",
+          !method.active && "bg-muted/20",
+          highlighted && "border-primary/40 bg-primary/5 ring-2 ring-primary/15"
+        )}
+      >
+        <div className="flex flex-col gap-3 p-3 lg:flex-row lg:items-center">
+          <div className="flex min-w-0 flex-1 items-start gap-3">
+            <span
+              className="grid h-9 w-9 shrink-0 place-items-center rounded-md text-white shadow-sm"
+              style={{ backgroundColor: meta.hue }}
+              aria-hidden
+            >
+              <Icon icon={meta.icon} className="h-4 w-4" />
+            </span>
+            <div className="min-w-0 flex-1">
+              <div className="flex flex-wrap items-center gap-2">
+                <p className="truncate text-sm font-semibold">{displayLabel}</p>
+                <span className="text-xs text-muted-foreground">
+                  {meta.label}
+                </span>
+                {highlighted ? (
+                  <Badge
+                    variant="outline"
+                    className="h-5 border-primary/30 bg-primary/5 text-primary"
+                  >
+                    New
+                  </Badge>
+                ) : null}
+              </div>
+              <div className="mt-1 flex min-w-0 flex-wrap items-center gap-2">
+                {missingDetail ? (
+                  <Badge
+                    variant="outline"
+                    className="h-6 border-amber-200 bg-amber-50 text-amber-900 dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-100"
+                  >
+                    Needs detail
+                  </Badge>
+                ) : (
+                  <span className="max-w-full truncate rounded-md bg-muted px-2 py-1 text-xs text-foreground">
+                    {paymentDetail}
+                  </span>
+                )}
+                {instructions ? (
+                  <span className="max-w-full truncate text-xs text-muted-foreground">
+                    {instructions}
+                  </span>
+                ) : null}
+              </div>
+            </div>
+          </div>
+
+          <div className="flex flex-wrap items-center gap-2 lg:justify-end">
+            <div className="flex h-8 items-center gap-2 rounded-md border border-border bg-card px-2">
+              {method.active ? (
+                <Eye className="h-3.5 w-3.5 text-emerald-600" />
+              ) : (
+                <EyeOff className="h-3.5 w-3.5 text-muted-foreground" />
+              )}
+              <span className="text-xs font-medium">
+                {method.active ? "Visible" : "Hidden"}
+              </span>
+              <Switch
+                size="sm"
+                checked={method.active}
+                disabled={disabled}
+                onCheckedChange={(checked) =>
+                  onChange({ active: checked === true })
+                }
+                aria-label={method.active ? "Hide method" : "Show method"}
+              />
+            </div>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              disabled={disabled}
+              onClick={onEdit}
+            >
+              <Pencil className="mr-1.5 h-3.5 w-3.5" />
+              Edit
+            </Button>
+            <div className="flex items-center gap-1">
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon-sm"
+                disabled={disabled || index === 0}
+                onClick={() => onMove(-1)}
+                aria-label="Move method up"
+              >
+                <ArrowUp className="h-3.5 w-3.5" />
+              </Button>
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon-sm"
+                disabled={disabled || index === count - 1}
+                onClick={() => onMove(1)}
+                aria-label="Move method down"
+              >
+                <ArrowDown className="h-3.5 w-3.5" />
+              </Button>
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon-sm"
+                disabled={disabled}
+                onClick={onRemove}
+                className="text-destructive"
+                aria-label="Remove payment method"
+              >
+                <Trash2 className="h-3.5 w-3.5" />
+              </Button>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
-    <div className="rounded-md border border-border/70 bg-muted/10 p-2">
-      <div className="flex items-center gap-1.5">
-        <Popover open={pickerOpen} onOpenChange={setPickerOpen}>
-          <PopoverTrigger
-            render={
-              <button
-                type="button"
-                className="grid h-9 w-9 shrink-0 place-items-center rounded-md text-white shadow-sm transition-transform hover:scale-105"
-                style={{ backgroundColor: meta.hue }}
-                aria-label={`Change payment method - currently ${meta.label}`}
-                disabled={disabled}
-              >
-                <Icon icon={meta.icon} className="h-4 w-4" aria-hidden />
-              </button>
-            }
-          />
-          <PopoverContent align="start" sideOffset={6} className="w-[280px] p-2">
-            <PaymentMethodGrid
-              current={method.type}
-              onSelect={(type) => {
-                const nextMeta = getStorePaymentMethodMeta(type);
-                onChange({
-                  type,
-                  label:
-                    method.label === meta.label || !method.label.trim()
-                      ? nextMeta.label
-                      : method.label,
-                });
-                setPickerOpen(false);
-              }}
+    <div
+      ref={rowRef}
+      className={cn(
+        "rounded-md border border-primary/30 bg-background p-3 shadow-sm ring-1 ring-primary/10 transition-colors",
+        !method.active && "bg-muted/20"
+      )}
+    >
+      <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
+        <div className="min-w-0 flex-1">
+          <div className="flex flex-wrap items-center gap-2">
+            <Popover open={pickerOpen} onOpenChange={setPickerOpen}>
+              <PopoverTrigger
+                render={
+                  <button
+                    type="button"
+                    className="inline-flex h-9 max-w-full items-center gap-2 rounded-md border border-border bg-background px-2.5 text-sm font-medium transition-colors hover:bg-muted disabled:cursor-not-allowed disabled:opacity-60"
+                    aria-label={`Change payment method - currently ${meta.label}`}
+                    disabled={disabled}
+                  >
+                    <span
+                      className="grid h-6 w-6 shrink-0 place-items-center rounded-md text-white"
+                      style={{ backgroundColor: meta.hue }}
+                      aria-hidden
+                    >
+                      <Icon icon={meta.icon} className="h-3.5 w-3.5" />
+                    </span>
+                    <span className="truncate">{meta.label}</span>
+                    <Pencil className="h-3.5 w-3.5 text-muted-foreground" />
+                  </button>
+                }
+              />
+              <PopoverContent align="start" sideOffset={8} className="w-[320px] p-3">
+                <p className="mb-2 text-xs font-semibold text-muted-foreground">
+                  Change payment type
+                </p>
+                <PaymentMethodGrid
+                  compact
+                  current={method.type}
+                  onSelect={(type) => {
+                    const nextMeta = getStorePaymentMethodMeta(type);
+                    onChange({
+                      type,
+                      label:
+                        method.label === meta.label || !method.label.trim()
+                          ? nextMeta.label
+                          : method.label,
+                    });
+                    setPickerOpen(false);
+                  }}
+                />
+              </PopoverContent>
+            </Popover>
+
+            <Badge
+              variant="outline"
+              className={cn(
+                "h-6",
+                method.active
+                  ? "border-emerald-200 bg-emerald-50 text-emerald-900 dark:border-emerald-500/30 dark:bg-emerald-500/10 dark:text-emerald-100"
+                  : "border-border bg-muted text-muted-foreground"
+              )}
+            >
+              {method.active ? "Visible to guests" : "Hidden"}
+            </Badge>
+          </div>
+
+          <div className="mt-3 space-y-1.5">
+            <Label htmlFor={`${fieldId}-label`}>Display name</Label>
+            <Input
+              id={`${fieldId}-label`}
+              value={method.label}
+              disabled={disabled}
+              onChange={(event) => onChange({ label: event.target.value })}
+              placeholder={meta.label}
+              className="h-9 text-sm"
+              aria-label={`${meta.label} label`}
             />
-          </PopoverContent>
-        </Popover>
+          </div>
+        </div>
 
-        <Input
-          value={method.label}
-          disabled={disabled}
-          onChange={(event) => onChange({ label: event.target.value })}
-          placeholder={meta.label}
-          className="h-9 min-w-0 flex-1 text-sm"
-          aria-label={`${meta.label} label`}
-        />
+        <div className="flex flex-wrap items-center gap-2 lg:justify-end">
+          <div className="flex h-9 items-center gap-2 rounded-md border border-border bg-background px-2.5">
+            {method.active ? (
+              <Eye className="h-3.5 w-3.5 text-emerald-600" />
+            ) : (
+              <EyeOff className="h-3.5 w-3.5 text-muted-foreground" />
+            )}
+            <span className="text-xs font-medium">
+              {method.active ? "Visible" : "Hidden"}
+            </span>
+            <Switch
+              size="sm"
+              checked={method.active}
+              disabled={disabled}
+              onCheckedChange={(checked) =>
+                onChange({ active: checked === true })
+              }
+              aria-label={method.active ? "Hide method" : "Show method"}
+            />
+          </div>
 
-        <Button
-          type="button"
-          variant={method.active ? "outline" : "secondary"}
-          size="icon-sm"
-          disabled={disabled}
-          onClick={() => onChange({ active: !method.active })}
-          aria-label={method.active ? "Hide method" : "Show method"}
-        >
-          {method.active ? (
-            <Eye className="h-3.5 w-3.5" />
-          ) : (
-            <EyeOff className="h-3.5 w-3.5" />
-          )}
-        </Button>
-        <Button
-          type="button"
-          variant="ghost"
-          size="icon-sm"
-          disabled={disabled || index === 0}
-          onClick={() => onMove(-1)}
-          aria-label="Move method up"
-        >
-          <ArrowUp className="h-3.5 w-3.5" />
-        </Button>
-        <Button
-          type="button"
-          variant="ghost"
-          size="icon-sm"
-          disabled={disabled || index === count - 1}
-          onClick={() => onMove(1)}
-          aria-label="Move method down"
-        >
-          <ArrowDown className="h-3.5 w-3.5" />
-        </Button>
-        <Button
-          type="button"
-          variant="ghost"
-          size="icon-sm"
-          disabled={disabled}
-          onClick={onRemove}
-          className="text-destructive"
-          aria-label="Remove payment method"
-        >
-          <Trash2 className="h-3.5 w-3.5" />
-        </Button>
+          <div className="flex items-center gap-1">
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              disabled={disabled}
+              onClick={onDoneEdit}
+            >
+              <CheckCircle2 className="mr-1.5 h-3.5 w-3.5" />
+              Done
+            </Button>
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon-sm"
+              disabled={disabled || index === 0}
+              onClick={() => onMove(-1)}
+              aria-label="Move method up"
+            >
+              <ArrowUp className="h-3.5 w-3.5" />
+            </Button>
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon-sm"
+              disabled={disabled || index === count - 1}
+              onClick={() => onMove(1)}
+              aria-label="Move method down"
+            >
+              <ArrowDown className="h-3.5 w-3.5" />
+            </Button>
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon-sm"
+              disabled={disabled}
+              onClick={onRemove}
+              className="text-destructive"
+              aria-label="Remove payment method"
+            >
+              <Trash2 className="h-3.5 w-3.5" />
+            </Button>
+          </div>
+        </div>
       </div>
 
-      <div className="mt-2 grid gap-2">
-        <Input
-          value={method.value}
-          disabled={disabled}
-          onChange={(event) => onChange({ value: event.target.value })}
-          placeholder={meta.valuePlaceholder}
-          className="h-9 text-sm"
-          aria-label={`${meta.label} payment detail`}
-        />
-        <Textarea
-          value={method.instructions ?? ""}
-          disabled={disabled}
-          onChange={(event) =>
-            onChange({ instructions: event.target.value || null })
-          }
-          placeholder={meta.instructionsPlaceholder}
-          className="min-h-16 resize-y text-sm"
-          aria-label={`${meta.label} instructions`}
-        />
+      <div className="mt-4 grid gap-3 lg:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)]">
+        <div className="space-y-1.5">
+          <Label htmlFor={`${fieldId}-value`}>Payment detail</Label>
+          <Input
+            id={`${fieldId}-value`}
+            value={method.value}
+            disabled={disabled}
+            onChange={(event) => onChange({ value: event.target.value })}
+            placeholder={meta.valuePlaceholder}
+            className="h-9 text-sm"
+            aria-label={`${meta.label} payment detail`}
+          />
+          <p className="text-[11px] leading-4 text-muted-foreground">
+            Shown exactly to guests after approval.
+          </p>
+        </div>
+
+        <div className="space-y-1.5">
+          <Label htmlFor={`${fieldId}-instructions`}>Guest instructions</Label>
+          <Textarea
+            id={`${fieldId}-instructions`}
+            value={method.instructions ?? ""}
+            disabled={disabled}
+            onChange={(event) =>
+              onChange({ instructions: event.target.value || null })
+            }
+            placeholder={meta.instructionsPlaceholder}
+            className="min-h-20 resize-y text-sm"
+            aria-label={`${meta.label} instructions`}
+          />
+        </div>
       </div>
     </div>
   );
@@ -1719,21 +2151,21 @@ function AddPaymentMethodButton({
 
   return (
     <Popover open={open} onOpenChange={setOpen}>
-      <PopoverTrigger
-        render={
-          <button
-            type="button"
-            disabled={disabled}
-            className="flex w-full items-center justify-center gap-1.5 rounded-md border border-dashed border-border/70 bg-background/40 px-3 py-2 text-[12px] font-medium text-muted-foreground transition-all hover:border-primary/45 hover:bg-primary/5 hover:text-primary disabled:cursor-not-allowed disabled:opacity-60"
-          >
-            <Plus className="h-3.5 w-3.5" />
-            Add payment method
-          </button>
-        }
-      />
-      <PopoverContent align="start" sideOffset={6} className="w-[280px] p-2">
+      <PopoverTrigger render={<Button type="button" size="sm" disabled={disabled} />}>
+        <Plus className="mr-1.5 h-3.5 w-3.5" />
+        Add method
+      </PopoverTrigger>
+      <PopoverContent align="end" sideOffset={8} className="w-[320px] p-3">
+        <div className="mb-2">
+          <p className="text-sm font-semibold">Add payment method</p>
+          <p className="mt-1 text-xs leading-5 text-muted-foreground">
+            Added methods appear at the end of the list.
+          </p>
+        </div>
         <PaymentMethodGrid
+          compact
           current={null}
+          disabled={disabled}
           onSelect={(type) => {
             onAdd(type);
             setOpen(false);
@@ -1746,27 +2178,34 @@ function AddPaymentMethodButton({
 
 function PaymentMethodGrid({
   current,
+  disabled = false,
+  compact = false,
   onSelect,
 }: {
   current: StorePaymentMethodType | null;
+  disabled?: boolean;
+  compact?: boolean;
   onSelect: (type: StorePaymentMethodType) => void;
 }) {
   return (
-    <div className="grid grid-cols-5 gap-1.5">
+    <div className={cn("grid gap-2", compact ? "grid-cols-1" : "sm:grid-cols-2")}>
       {STORE_PAYMENT_METHOD_META.map((method) => {
         const selected = current === method.type;
         return (
           <button
             key={method.type}
             type="button"
+            disabled={disabled}
             onClick={() => onSelect(method.type)}
             aria-label={method.label}
             title={method.label}
             className={cn(
-              "group flex aspect-square flex-col items-center justify-center gap-0.5 rounded-md border text-[9px] font-medium transition-all",
+              "group flex min-h-14 w-full min-w-0 items-center gap-2 rounded-md border p-2 text-left transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1",
+              compact && "min-h-11",
               selected
                 ? "border-transparent text-white shadow-md"
-                : "border-border/70 text-muted-foreground hover:scale-[1.03] hover:border-foreground/40 hover:text-foreground"
+                : "border-border/70 bg-background hover:border-primary/35 hover:bg-primary/5",
+              disabled && "cursor-not-allowed opacity-60"
             )}
             style={
               selected
@@ -1774,14 +2213,39 @@ function PaymentMethodGrid({
                     backgroundColor: method.hue,
                     boxShadow: `0 0 0 2px ${hexWithAlpha(
                       method.hue,
-                      0.45
-                    )}, 0 4px 10px -4px ${hexWithAlpha(method.hue, 0.6)}`,
+                      0.25
+                    )}, 0 8px 18px -12px ${hexWithAlpha(method.hue, 0.8)}`,
                   }
                 : undefined
             }
           >
-            <Icon icon={method.icon} className="h-4 w-4" aria-hidden />
-            <span className="truncate leading-none">{method.label}</span>
+            <span
+              className={cn(
+                "grid h-8 w-8 shrink-0 place-items-center rounded-md text-white shadow-sm",
+                compact && "h-7 w-7",
+                selected && "bg-white/20 shadow-none"
+              )}
+              style={selected ? undefined : { backgroundColor: method.hue }}
+              aria-hidden
+            >
+              <Icon icon={method.icon} className="h-4 w-4" />
+            </span>
+            <span className="min-w-0 flex-1 overflow-hidden">
+              <span className="block truncate text-xs font-semibold">
+                {method.label}
+              </span>
+              {!compact ? (
+                <span
+                  className={cn(
+                    "mt-0.5 block truncate text-[11px]",
+                    selected ? "text-white/80" : "text-muted-foreground"
+                  )}
+                >
+                  {method.valuePlaceholder}
+                </span>
+              ) : null}
+            </span>
+            {selected ? <CheckCircle2 className="h-3.5 w-3.5 shrink-0" /> : null}
           </button>
         );
       })}
@@ -1789,49 +2253,70 @@ function PaymentMethodGrid({
   );
 }
 
-function RequestQueueStat({
+function RequestQueueFocusButton({
   label,
+  description,
   value,
-  tone,
+  active,
+  onClick,
 }: {
   label: string;
+  description: string;
   value: number;
-  tone: "attention" | "payment" | "ready";
+  active: boolean;
+  onClick: () => void;
 }) {
   return (
-    <div
+    <button
+      type="button"
+      onClick={onClick}
       className={cn(
-        "rounded-lg border bg-background p-3",
-        tone === "attention" &&
-          "border-amber-200 bg-amber-50/70 dark:border-amber-500/30 dark:bg-amber-500/10",
-        tone === "payment" &&
-          "border-violet-200 bg-violet-50/70 dark:border-violet-500/30 dark:bg-violet-500/10",
-        tone === "ready" &&
-          "border-emerald-200 bg-emerald-50/70 dark:border-emerald-500/30 dark:bg-emerald-500/10"
+        "min-h-28 rounded-lg border p-3 text-left transition hover:border-primary/30 hover:bg-muted/30",
+        active
+          ? "border-primary/35 bg-primary/5 shadow-sm"
+          : "border-border bg-background"
       )}
     >
-      <p className="text-[11px] font-medium text-muted-foreground">{label}</p>
-      <p className="mt-1 text-xl font-semibold tabular-nums">{value}</p>
-    </div>
+      <div className="flex items-start justify-between gap-3">
+        <div className="min-w-0">
+          <p className="text-sm font-semibold">{label}</p>
+          <p className="mt-1 line-clamp-2 text-xs leading-5 text-muted-foreground">
+            {description}
+          </p>
+        </div>
+        <span
+          className={cn(
+            "grid h-8 min-w-8 place-items-center rounded-md border px-2 text-sm font-semibold tabular-nums",
+            active
+              ? "border-primary/25 bg-background text-primary"
+              : "border-border bg-muted/40 text-foreground"
+          )}
+        >
+          {value}
+        </span>
+      </div>
+    </button>
   );
 }
 
 function RequestQueueSkeleton() {
   return (
-    <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
-      {[0, 1, 2, 3, 4, 5].map((item) => (
-        <div
-          key={item}
-          className="rounded-lg border border-border bg-background p-3"
-        >
+    <div className="divide-y divide-border/70">
+      {[0, 1, 2, 3, 4].map((item) => (
+        <div key={item} className="grid gap-4 p-4 lg:grid-cols-[minmax(220px,1.1fr)_minmax(280px,1.5fr)_150px_170px]">
           <div className="flex items-center gap-3">
             <div className="h-10 w-10 rounded-full bg-muted" />
             <div className="min-w-0 flex-1 space-y-2">
-              <div className="h-3 w-1/2 rounded-full bg-muted" />
-              <div className="h-3 w-3/4 rounded-full bg-muted" />
+              <div className="h-3 w-32 rounded-full bg-muted" />
+              <div className="h-3 w-44 rounded-full bg-muted" />
             </div>
           </div>
-          <div className="mt-3 h-28 rounded-md bg-muted/70" />
+          <div className="space-y-2">
+            <div className="h-3 w-3/4 rounded-full bg-muted" />
+            <div className="h-3 w-1/2 rounded-full bg-muted" />
+          </div>
+          <div className="h-8 rounded-md bg-muted" />
+          <div className="h-8 rounded-md bg-muted" />
         </div>
       ))}
     </div>
@@ -1840,7 +2325,7 @@ function RequestQueueSkeleton() {
 
 function RequestAvatar({ name }: { name: string }) {
   return (
-    <span className="grid h-10 w-10 shrink-0 place-items-center rounded-full border border-sky-200 bg-sky-50 text-sm font-semibold text-sky-700 dark:border-sky-500/30 dark:bg-sky-500/10 dark:text-sky-200">
+    <span className="grid h-10 w-10 shrink-0 place-items-center rounded-full border border-primary/20 bg-primary/5 text-sm font-semibold text-primary">
       {initialsForName(name)}
     </span>
   );
@@ -1916,7 +2401,27 @@ function StoreItemArtwork({
   );
 }
 
-function RequestQueueCard({
+function requestQueueAccentClasses(
+  tone: ReturnType<typeof requestNextAction>["tone"]
+) {
+  if (tone === "attention") return "before:bg-amber-500";
+  if (tone === "ready") return "before:bg-primary";
+  if (tone === "success") return "before:bg-emerald-500";
+  if (tone === "muted") return "before:bg-muted-foreground/40";
+  return "before:bg-border";
+}
+
+function requestQueueCtaLabel(request: RequestSummary) {
+  if (request.status === "new") return "Review";
+  if (request.paymentStatus === "proof_submitted") return "Confirm payment";
+  if (isReadyToDeliver(request)) return "Deliver";
+  if (request.status === "accepted") return "Track payment";
+  if (request.status === "fulfilled") return "View record";
+  if (request.status === "cancelled") return "View record";
+  return "Open ticket";
+}
+
+function RequestQueueRow({
   request,
 }: {
   request: RequestSummary;
@@ -1930,68 +2435,80 @@ function RequestQueueCard({
   return (
     <Link
       href={`/dashboard/store/requests/${request.id}`}
-      className="group block min-h-full rounded-lg border border-border bg-background p-3 text-left shadow-sm transition hover:-translate-y-0.5 hover:border-primary/40 hover:bg-card hover:shadow-md"
+      className={cn(
+        "group relative grid gap-4 bg-background p-4 text-left transition before:absolute before:inset-y-4 before:left-0 before:w-1 before:rounded-r-full hover:bg-muted/25 lg:grid-cols-[minmax(220px,1.1fr)_minmax(280px,1.5fr)_150px_170px] lg:items-center",
+        requestQueueAccentClasses(action.tone)
+      )}
     >
-      <div className="flex items-start gap-3">
+      <div className="flex min-w-0 items-start gap-3">
         <RequestAvatar name={request.guestName} />
-        <div className="min-w-0 flex-1">
-          <div className="flex items-start justify-between gap-2">
-            <div className="min-w-0">
-              <p className="truncate text-sm font-semibold">
-                {request.guestName}
-              </p>
-              <p className="mt-0.5 flex min-w-0 items-center gap-1 text-xs text-muted-foreground">
-                <Home className="h-3 w-3 shrink-0" />
-                <span className="truncate">{request.guidebookTitle}</span>
-              </p>
-            </div>
+        <div className="min-w-0">
+          <p className="truncate text-sm font-semibold">{request.guestName}</p>
+          <p className="mt-1 flex min-w-0 items-center gap-1.5 text-xs text-muted-foreground">
+            <Home className="h-3.5 w-3.5 shrink-0" />
+            <span className="truncate">{request.guidebookTitle}</span>
+          </p>
+          <div className="mt-2 flex flex-wrap gap-1.5">
             <RequestStatusBadge status={request.status} />
+            <PaymentStatusBadge status={request.paymentStatus} />
           </div>
         </div>
       </div>
 
-      <div className="mt-3 rounded-md border border-border/70 bg-muted/25 p-3">
+      <div className="min-w-0">
         {previewItems.length > 0 ? (
-          <div className="mb-3 flex items-center gap-1.5">
+          <div className="mb-2 flex items-center gap-1.5">
             {previewItems.map((item) => (
               <StoreItemArtwork
                 key={item.id}
                 imageUrl={item.imageUrl}
                 name={item.itemName}
-                className="h-12 w-12"
+                className="h-10 w-10"
               />
             ))}
             {overflowCount > 0 ? (
-              <span className="grid h-12 w-12 place-items-center rounded-md border border-dashed border-border bg-background text-xs font-semibold text-muted-foreground">
+              <span className="grid h-10 w-10 place-items-center rounded-md border border-dashed border-border bg-muted/30 text-xs font-semibold text-muted-foreground">
                 +{overflowCount}
               </span>
             ) : null}
           </div>
         ) : null}
-        <div className="flex items-start gap-2">
-          <Package className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
-          <div className="min-w-0">
-            <p className="line-clamp-2 text-sm font-medium">
-              {requestItemSummary(request)}
-            </p>
-            <p className="mt-1 text-xs text-muted-foreground">
-              {action.label}
-              {requestedFor ? ` - For ${requestedFor}` : ""}
-            </p>
-          </div>
-        </div>
+        <p className="line-clamp-2 text-sm font-semibold">
+          {requestItemSummary(request)}
+        </p>
+        <p className="mt-1 line-clamp-1 text-xs text-muted-foreground">
+          {action.label}
+        </p>
       </div>
 
-      <div className="mt-3 flex items-center justify-between gap-3 text-xs">
-        <span className="inline-flex min-w-0 items-center gap-1 text-muted-foreground">
+      <div className="grid gap-1 text-xs text-muted-foreground">
+        <span className="inline-flex min-w-0 items-center gap-1.5">
           <FileText className="h-3 w-3 shrink-0" />
           <span className="truncate font-medium text-foreground">
             {request.requestCode}
           </span>
-          {requestedAt ? <span className="shrink-0">- {requestedAt}</span> : null}
         </span>
-        <span className="shrink-0 text-sm font-semibold">
+        {requestedAt ? (
+          <span className="inline-flex items-center gap-1.5">
+            <CalendarClock className="h-3 w-3 shrink-0" />
+            {requestedAt}
+          </span>
+        ) : null}
+        {requestedFor ? (
+          <span className="inline-flex items-center gap-1.5">
+            <Package className="h-3 w-3 shrink-0" />
+            For {requestedFor}
+          </span>
+        ) : null}
+      </div>
+
+      <div className="flex items-center justify-between gap-3 lg:justify-end">
+        <span className="text-sm font-semibold tabular-nums">
           {request.subtotalLabel}
+        </span>
+        <span className="inline-flex h-8 items-center justify-center gap-1.5 rounded-md border border-border bg-background px-2.5 text-xs font-semibold text-foreground transition group-hover:border-primary/30 group-hover:text-primary">
+          {requestQueueCtaLabel(request)}
+          <ArrowRight className="h-3.5 w-3.5 transition group-hover:translate-x-0.5" />
         </span>
       </div>
     </Link>
@@ -2017,44 +2534,68 @@ export function RequestDetailPanel({
   const lastUpdated = formatRequestDateTime(request.updatedAt);
   const statusCopy = requestStatusCopy(request.status);
   const paymentCopy = paymentStatusCopy(request.paymentStatus);
+  const action = requestNextAction(request);
 
   return (
-    <div className="grid gap-4">
-      <section className="overflow-hidden rounded-lg border border-border bg-card shadow-sm">
-        <div className="border-b border-border/70 p-4 lg:p-5">
-          <div className="flex flex-wrap items-start justify-between gap-4">
-            <div className="flex min-w-0 gap-3">
-              <RequestAvatar name={request.guestName} />
-              <div className="min-w-0">
-                <div className="flex flex-wrap items-center gap-2">
-                  <span className="rounded-full border border-border bg-background px-2 py-0.5 text-[11px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
-                    {request.requestCode}
-                  </span>
-                  <RequestStatusBadge status={request.status} />
-                  <PaymentStatusBadge status={request.paymentStatus} />
+    <div className="mx-auto grid max-w-[1600px] gap-5">
+      <section className="border-b border-border/70 pb-5">
+        <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_380px]">
+          <div className="rounded-lg border border-border bg-background p-4 lg:p-5">
+            <div className="flex flex-wrap items-start justify-between gap-4">
+              <div className="flex min-w-0 gap-3">
+                <RequestAvatar name={request.guestName} />
+                <div className="min-w-0">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <span className="rounded-full border border-border bg-muted/30 px-2 py-0.5 text-[11px] font-semibold uppercase text-muted-foreground">
+                      {request.requestCode}
+                    </span>
+                    <RequestStatusBadge status={request.status} />
+                    <PaymentStatusBadge status={request.paymentStatus} />
+                  </div>
+                  <h2 className="mt-3 text-2xl font-semibold tracking-tight">
+                    {request.guestName}
+                  </h2>
+                  <p className="mt-1 flex min-w-0 items-center gap-1.5 text-sm text-muted-foreground">
+                    <Home className="h-4 w-4 shrink-0" />
+                    <span className="truncate">{request.guidebookTitle}</span>
+                  </p>
                 </div>
-                <h2 className="mt-2 text-2xl font-semibold tracking-tight">
-                  {request.guestName}
-                </h2>
-                <p className="mt-1 flex min-w-0 items-center gap-1.5 text-sm text-muted-foreground">
-                  <Home className="h-4 w-4 shrink-0" />
-                  <span className="truncate">{request.guidebookTitle}</span>
+              </div>
+
+              <div className="min-w-36 rounded-md border border-border bg-muted/25 px-4 py-3 sm:text-right">
+                <p className="text-[11px] font-semibold uppercase text-muted-foreground">
+                  Request total
+                </p>
+                <p className="mt-1 text-2xl font-semibold tracking-tight">
+                  {request.subtotalLabel}
                 </p>
               </div>
             </div>
+          </div>
 
-            <div className="rounded-lg border border-border bg-background px-4 py-3 text-right">
-              <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
-                Request total
-              </p>
-              <p className="mt-1 text-2xl font-semibold tracking-tight">
-                {request.subtotalLabel}
-              </p>
+          <div className={cn("rounded-lg border p-4", actionToneClasses(action.tone))}>
+            <div className="flex items-start gap-3">
+              <AlertCircle className="mt-0.5 h-5 w-5 shrink-0" />
+              <div className="min-w-0">
+                <p className="text-[11px] font-semibold uppercase opacity-70">
+                  Next action
+                </p>
+                <h3 className="mt-1 text-lg font-semibold">{action.label}</h3>
+                <p className="mt-1 text-sm leading-6 opacity-80">
+                  {action.description}
+                </p>
+              </div>
+            </div>
+            <div className="mt-4">
+              <RequestCurrentStepActions
+                request={request}
+                updateRequest={updateRequest}
+              />
             </div>
           </div>
         </div>
 
-        <div className="grid gap-3 p-4 sm:grid-cols-3">
+        <div className="mt-4 grid gap-2 md:grid-cols-4">
           <div className="rounded-md border border-border/70 bg-background p-3">
             <p className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground">
               <CalendarClock className="h-3.5 w-3.5" />
@@ -2082,23 +2623,35 @@ export function RequestDetailPanel({
               {lastUpdated ?? "Unknown"}
             </p>
           </div>
+          <div className="rounded-md border border-border/70 bg-background p-3">
+            <p className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground">
+              <WalletCards className="h-3.5 w-3.5" />
+              Payment
+            </p>
+            <p className="mt-1 truncate text-sm font-semibold">
+              {paymentCopy.label}
+            </p>
+          </div>
         </div>
       </section>
 
-      <RequestProgressPanel request={request} updateRequest={updateRequest} />
+      <div className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_360px] 2xl:grid-cols-[minmax(0,1fr)_400px]">
+        <div className="grid content-start gap-5">
+          <RequestProgressPanel request={request} updateRequest={updateRequest} />
 
-      <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_340px]">
-        <div className="grid content-start gap-4">
-          <section className="rounded-lg border border-border bg-card p-4">
-            <div className="flex items-center gap-2">
-              <Package className="h-4 w-4 text-primary" />
-              <h3 className="text-sm font-semibold">What they requested</h3>
+          <section className="overflow-hidden rounded-lg border border-border bg-background">
+            <div className="flex items-center justify-between gap-3 border-b border-border/70 px-4 py-3">
+              <div className="flex items-center gap-2">
+                <Package className="h-4 w-4 text-primary" />
+                <h3 className="text-sm font-semibold">Requested items</h3>
+              </div>
+              <Badge variant="outline">{request.items.length} items</Badge>
             </div>
-            <div className="mt-3 grid gap-2">
+            <div className="divide-y divide-border/70">
               {request.items.map((item) => (
                 <div
                   key={item.id}
-                  className="grid grid-cols-[56px_minmax(0,1fr)] gap-3 rounded-md border border-border/70 bg-background p-3 sm:grid-cols-[64px_minmax(0,1fr)_auto]"
+                  className="grid grid-cols-[56px_minmax(0,1fr)] gap-3 p-4 sm:grid-cols-[64px_minmax(0,1fr)_auto] sm:items-center"
                 >
                   <StoreItemArtwork
                     imageUrl={item.imageUrl}
@@ -2134,7 +2687,7 @@ export function RequestDetailPanel({
           </section>
 
           {request.guestNote ? (
-            <section className="rounded-lg border border-border bg-card p-4">
+            <section className="rounded-lg border border-border bg-background p-4">
               <div className="flex items-center gap-2">
                 <FileText className="h-4 w-4 text-primary" />
                 <h3 className="text-sm font-semibold">Guest note</h3>
@@ -2145,8 +2698,8 @@ export function RequestDetailPanel({
             </section>
           ) : null}
 
-          <section className="rounded-lg border border-border bg-card p-4">
-            <div className="flex items-center justify-between gap-3">
+          <section className="rounded-lg border border-border bg-background p-4">
+            <div className="flex flex-wrap items-center justify-between gap-3">
               <div className="flex items-center gap-2">
                 <MessageSquare className="h-4 w-4 text-primary" />
                 <h3 className="text-sm font-semibold">Guest conversation</h3>
@@ -2210,8 +2763,8 @@ export function RequestDetailPanel({
           </section>
         </div>
 
-        <aside className="grid content-start gap-4">
-          <section className="rounded-lg border border-border bg-card p-4">
+        <aside className="overflow-hidden rounded-lg border border-border bg-background xl:sticky xl:top-4 xl:self-start">
+          <section className="p-4">
             <div className="flex items-center gap-2">
               <UserRound className="h-4 w-4 text-primary" />
               <h3 className="text-sm font-semibold">Sender</h3>
@@ -2241,7 +2794,7 @@ export function RequestDetailPanel({
             </div>
           </section>
 
-          <section className="rounded-lg border border-border bg-card p-4">
+          <section className="border-t border-border/70 p-4">
             <div className="flex items-center gap-2">
               <Circle className="h-4 w-4 text-primary" />
               <h3 className="text-sm font-semibold">State controls</h3>
@@ -2295,7 +2848,7 @@ export function RequestDetailPanel({
             </div>
           </section>
 
-          <section className="rounded-lg border border-border bg-card p-4">
+          <section className="border-t border-border/70 p-4">
             <div className="flex items-center justify-between gap-3">
               <h3 className="text-sm font-semibold">Private host note</h3>
               <Button
@@ -2350,19 +2903,17 @@ function RequestProgressPanel({
   ];
 
   return (
-    <section className="overflow-hidden rounded-lg border border-border bg-card">
-      <div className="flex flex-wrap items-start justify-between gap-3">
-        <div className="p-4">
+    <section className="overflow-hidden rounded-lg border border-border bg-background">
+      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border/70 px-4 py-3">
+        <div>
           <h3 className="text-sm font-semibold">Request flow</h3>
           <p className="mt-1 text-xs text-muted-foreground">
-            Done, current, and next steps stay separated here.
+            {action.label}
           </p>
         </div>
-        <div className="p-4">
-          <RequestStatusBadge status={request.status} />
-        </div>
+        <RequestStatusBadge status={request.status} />
       </div>
-      <div className="grid gap-2 border-y border-border/70 bg-muted/20 p-3 md:grid-cols-5">
+      <ol className="grid gap-4 p-4 md:grid-cols-5 md:gap-0">
         {steps.map((step, index) => {
           const state = step.blocked
             ? "blocked"
@@ -2381,25 +2932,37 @@ function RequestProgressPanel({
                 : state === "next"
                   ? "Next"
                   : state === "blocked"
-                    ? "Stopped"
-                    : "Waiting";
+                  ? "Stopped"
+                  : "Waiting";
           return (
-            <div
+            <li
               key={step.label}
-              className={cn(
-                "rounded-md border p-3",
-                state === "complete" &&
-                  "border-emerald-200 bg-emerald-50 text-emerald-950 dark:border-emerald-500/30 dark:bg-emerald-500/10 dark:text-emerald-100",
-                state === "active" &&
-                  "border-amber-200 bg-amber-50 text-amber-950 ring-1 ring-amber-200 dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-100 dark:ring-amber-500/20",
-                state === "blocked" &&
-                  "border-rose-200 bg-rose-50 text-rose-950 dark:border-rose-500/30 dark:bg-rose-500/10 dark:text-rose-100",
-                state === "next" &&
-                  "border-sky-200 bg-sky-50 text-sky-950 dark:border-sky-500/30 dark:bg-sky-500/10 dark:text-sky-100",
-                state === "pending" && "border-border bg-muted/20"
-              )}
+              className="relative grid grid-cols-[28px_minmax(0,1fr)] gap-3 md:block md:pr-4"
             >
-              <div className="flex items-center gap-2">
+              {index < steps.length - 1 ? (
+                <span
+                  className={cn(
+                    "absolute bottom-[-1rem] left-[13px] top-8 w-px bg-border md:bottom-auto md:left-7 md:right-0 md:top-3.5 md:h-px md:w-auto",
+                    state === "complete" && "bg-primary/35",
+                    state === "active" && "bg-amber-300"
+                  )}
+                  aria-hidden
+                />
+              ) : null}
+              <span
+                className={cn(
+                  "relative z-10 grid h-7 w-7 place-items-center rounded-full border bg-background",
+                  state === "complete" &&
+                    "border-emerald-300 bg-emerald-50 text-emerald-700 dark:border-emerald-500/40 dark:bg-emerald-500/10 dark:text-emerald-100",
+                  state === "active" &&
+                    "border-amber-300 bg-amber-50 text-amber-800 ring-4 ring-amber-100 dark:border-amber-500/40 dark:bg-amber-500/10 dark:text-amber-100 dark:ring-amber-500/10",
+                  state === "blocked" &&
+                    "border-border bg-muted text-muted-foreground",
+                  state === "next" &&
+                    "border-primary/30 bg-primary/5 text-primary",
+                  state === "pending" && "border-border bg-muted/30 text-muted-foreground"
+                )}
+              >
                 {state === "complete" ? (
                   <CheckCircle2 className="h-4 w-4" />
                 ) : state === "blocked" ? (
@@ -2407,38 +2970,34 @@ function RequestProgressPanel({
                 ) : (
                   <Circle className="h-4 w-4" />
                 )}
-                <p className="text-[11px] font-semibold uppercase tracking-[0.1em] opacity-70">
+              </span>
+              <div className="min-w-0 md:mt-3">
+                <p className="text-[11px] font-semibold uppercase text-muted-foreground">
                   {stateLabel}
                 </p>
-              </div>
-              <p className="mt-2 text-sm font-semibold">{step.label}</p>
-              <p className="mt-1 text-xs leading-5 opacity-75">
-                {step.description}
-              </p>
-              {stepTimes[index] ? (
-                <p className="mt-2 text-[11px] font-medium opacity-70">
-                  {stepTimes[index]}
+                <p className="mt-1 text-sm font-semibold">{step.label}</p>
+                <p className="mt-1 text-xs leading-5 text-muted-foreground">
+                  {step.description}
                 </p>
-              ) : null}
-            </div>
+                {stepTimes[index] ? (
+                  <p className="mt-2 text-[11px] font-medium text-muted-foreground">
+                    {stepTimes[index]}
+                  </p>
+                ) : null}
+              </div>
+            </li>
           );
         })}
-      </div>
-      <div className={cn("p-4", actionToneClasses(action.tone))}>
-        <div className="flex flex-wrap items-start justify-between gap-3">
-          <div className="flex min-w-0 items-start gap-3">
-            <AlertCircle className="mt-0.5 h-5 w-5 shrink-0" />
-            <div className="min-w-0">
-              <p className="text-sm font-semibold">{action.label}</p>
-              <p className="mt-0.5 text-xs leading-5 opacity-80">
-                {action.description}
-              </p>
-            </div>
+      </ol>
+      <div className={cn("border-t border-border/70 p-4", actionToneClasses(action.tone))}>
+        <div className="flex items-start gap-3">
+          <AlertCircle className="mt-0.5 h-5 w-5 shrink-0" />
+          <div className="min-w-0">
+            <p className="text-sm font-semibold">{action.label}</p>
+            <p className="mt-0.5 text-xs leading-5 opacity-80">
+              {action.description}
+            </p>
           </div>
-          <RequestCurrentStepActions
-            request={request}
-            updateRequest={updateRequest}
-          />
         </div>
         <RequestCurrentStepDisclosure
           request={request}
@@ -2469,19 +3028,19 @@ function RequestCurrentStepActions({
         <>
           <Button
             type="button"
-            size="sm"
+            size="lg"
             onClick={() => void updateRequest({ status: "accepted" })}
           >
-            <CheckCircle2 className="mr-1.5 h-3.5 w-3.5" />
+            <CheckCircle2 className="mr-1.5 h-4 w-4" />
             Approve
           </Button>
           <Button
             type="button"
-            size="sm"
+            size="lg"
             variant="destructive"
             onClick={() => void updateRequest({ status: "cancelled" })}
           >
-            <XCircle className="mr-1.5 h-3.5 w-3.5" />
+            <XCircle className="mr-1.5 h-4 w-4" />
             Cancel
           </Button>
         </>
@@ -2489,22 +3048,27 @@ function RequestCurrentStepActions({
       {canConfirmPayment ? (
         <Button
           type="button"
-          size="sm"
+          size="lg"
           onClick={() => void updateRequest({ paymentStatus: "external_paid" })}
         >
-          <WalletCards className="mr-1.5 h-3.5 w-3.5" />
+          <WalletCards className="mr-1.5 h-4 w-4" />
           Confirm payment
         </Button>
       ) : null}
       {canFulfill ? (
         <Button
           type="button"
-          size="sm"
+          size="lg"
           onClick={() => void updateRequest({ status: "fulfilled" })}
         >
-          <CheckCircle2 className="mr-1.5 h-3.5 w-3.5" />
+          <CheckCircle2 className="mr-1.5 h-4 w-4" />
           Mark delivered
         </Button>
+      ) : null}
+      {!canAccept && !canConfirmPayment && !canFulfill ? (
+        <span className="inline-flex min-h-9 items-center rounded-md border border-current/15 bg-background/40 px-3 text-sm font-medium">
+          No immediate host action
+        </span>
       ) : null}
     </div>
   );
@@ -2527,7 +3091,7 @@ function RequestCurrentStepDisclosure({
 
   if (request.status === "new") {
     return (
-      <div className="mt-4 grid gap-3 rounded-lg border border-black/10 bg-background/70 p-3 text-sm dark:border-white/10">
+      <div className="mt-4 grid gap-3 border-t border-current/10 pt-4 text-sm">
         <p className="font-medium">Review before approving</p>
         <div className="grid gap-2 sm:grid-cols-3">
           <RequestMiniFact label="Guest" value={request.guestName} />
@@ -2535,7 +3099,7 @@ function RequestCurrentStepDisclosure({
           <RequestMiniFact label="Total" value={request.subtotalLabel} />
         </div>
         {request.guestNote ? (
-          <p className="whitespace-pre-wrap rounded-md bg-muted/40 p-3 leading-6">
+          <p className="whitespace-pre-wrap rounded-md bg-background/55 p-3 leading-6">
             {request.guestNote}
           </p>
         ) : null}
@@ -2548,10 +3112,10 @@ function RequestCurrentStepDisclosure({
     request.paymentStatus === "external_pending"
   ) {
     return (
-      <div className="mt-4 grid gap-3 rounded-lg border border-black/10 bg-background/70 p-3 text-sm dark:border-white/10">
+      <div className="mt-4 grid gap-3 border-t border-current/10 pt-4 text-sm">
         <p className="font-medium">Payment details the guest sees</p>
         {request.paymentInstructions ? (
-          <p className="whitespace-pre-wrap rounded-md bg-muted/40 p-3 leading-6">
+          <p className="whitespace-pre-wrap rounded-md bg-background/55 p-3 leading-6">
             {request.paymentInstructions}
           </p>
         ) : (
@@ -2566,7 +3130,7 @@ function RequestCurrentStepDisclosure({
             ))}
           </div>
         ) : (
-          <p className="rounded-md border border-dashed border-border p-3 text-xs text-muted-foreground">
+          <p className="rounded-md border border-dashed border-current/20 p-3 text-xs text-muted-foreground">
             No payment methods are attached to this guidebook Store yet.
           </p>
         )}
@@ -2576,15 +3140,18 @@ function RequestCurrentStepDisclosure({
 
   if (request.paymentStatus === "proof_submitted") {
     return (
-      <div className="mt-4 grid gap-3 rounded-lg border border-black/10 bg-background/70 p-3 text-sm dark:border-white/10">
+      <div className="mt-4 grid gap-3 border-t border-current/10 pt-4 text-sm">
         <div className="flex flex-wrap items-center justify-between gap-2">
-          <div>
-            <p className="font-medium">Payment proof is ready to review</p>
-            <p className="mt-1 text-xs text-muted-foreground">
-              Submitted{" "}
-              {formatRequestDateTime(request.paymentProofSubmittedAt) ??
-                "recently"}
-            </p>
+          <div className="flex min-w-0 items-start gap-3">
+            <WalletCards className="mt-0.5 h-4 w-4 shrink-0" />
+            <div>
+              <p className="font-medium">Payment proof is ready to review</p>
+              <p className="mt-1 text-xs opacity-75">
+                Submitted{" "}
+                {formatRequestDateTime(request.paymentProofSubmittedAt) ??
+                  "recently"}
+              </p>
+            </div>
           </div>
           <div className="flex flex-wrap gap-2">
             {safePaymentProofUrl ? (
@@ -2617,7 +3184,7 @@ function RequestCurrentStepDisclosure({
           </div>
         </div>
         {request.paymentProofNote ? (
-          <p className="whitespace-pre-wrap rounded-md bg-muted/40 p-3 leading-6">
+          <p className="whitespace-pre-wrap rounded-md bg-background/55 p-3 leading-6">
             {request.paymentProofNote}
           </p>
         ) : null}
@@ -2627,7 +3194,7 @@ function RequestCurrentStepDisclosure({
 
   if (request.status === "accepted" && paymentSettled) {
     return (
-      <div className="mt-4 grid gap-3 rounded-lg border border-black/10 bg-background/70 p-3 text-sm dark:border-white/10">
+      <div className="mt-4 grid gap-3 border-t border-current/10 pt-4 text-sm">
         <p className="font-medium">Ready to deliver</p>
         <div className="grid gap-2">
           {request.items.map((item) => (
@@ -2658,7 +3225,7 @@ function RequestCurrentStepDisclosure({
 
   if (request.status === "fulfilled") {
     return (
-      <div className="mt-4 rounded-lg border border-black/10 bg-background/70 p-3 text-sm dark:border-white/10">
+      <div className="mt-4 border-t border-current/10 pt-4 text-sm">
         Completed{" "}
         {formatRequestDateTime(request.fulfilledAt) ?? "without a timestamp"}.
       </div>
@@ -2667,7 +3234,7 @@ function RequestCurrentStepDisclosure({
 
   if (request.status === "cancelled") {
     return (
-      <div className="mt-4 rounded-lg border border-black/10 bg-background/70 p-3 text-sm dark:border-white/10">
+      <div className="mt-4 border-t border-current/10 pt-4 text-sm">
         Cancelled{" "}
         {formatRequestDateTime(request.cancelledAt) ?? "without a timestamp"}.
       </div>
@@ -2676,7 +3243,7 @@ function RequestCurrentStepDisclosure({
 
   if (noPayment) {
     return (
-      <div className="mt-4 rounded-lg border border-black/10 bg-background/70 p-3 text-sm dark:border-white/10">
+      <div className="mt-4 border-t border-current/10 pt-4 text-sm">
         Payment is skipped for this request.
       </div>
     );

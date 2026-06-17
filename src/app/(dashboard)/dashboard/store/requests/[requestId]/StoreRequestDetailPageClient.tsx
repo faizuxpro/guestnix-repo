@@ -73,8 +73,8 @@ export function StoreRequestDetailPageClient({
   }, [requestId]);
 
   return (
-    <div className="min-h-full overflow-y-auto bg-background p-5">
-      <div className="mx-auto grid max-w-7xl gap-5">
+    <div className="min-h-full overflow-y-auto bg-muted/20 p-5">
+      <div className="mx-auto grid max-w-[1600px] gap-5">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <Button
             variant="outline"

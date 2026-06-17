@@ -157,7 +157,11 @@ export function MessageInboxButton() {
               className="pointer-events-none absolute -right-1 -top-1 h-6 w-6 rounded-full bg-red-500/35"
               initial={{ opacity: 0, scale: 0.6 }}
               animate={{ opacity: [0.65, 0], scale: [0.72, 1.75] }}
-              exit={{ opacity: 0, scale: 0.8 }}
+              exit={{
+                opacity: 0,
+                scale: 0.8,
+                transition: { duration: 0.12, ease: "easeOut" },
+              }}
               transition={{
                 duration: 1.8,
                 ease: "easeOut",
@@ -182,8 +186,13 @@ export function MessageInboxButton() {
               }
               exit={
                 shouldReduceMotion
-                  ? { opacity: 0 }
-                  : { opacity: 0, scale: 0.7, y: -2 }
+                  ? { opacity: 0, transition: { duration: 0 } }
+                  : {
+                      opacity: 0,
+                      scale: 0.7,
+                      y: -2,
+                      transition: { duration: 0.16, ease: "easeOut" },
+                    }
               }
               transition={
                 shouldReduceMotion

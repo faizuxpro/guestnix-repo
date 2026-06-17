@@ -125,14 +125,18 @@ Use this mapping:
 
 Important variables:
 
-- Confirmation, Magic Link, Recovery, Invite, and Email Change templates must
-  keep `{{ .ConfirmationURL }}` in the button link.
+- Confirm signup, Magic Link, and Recovery templates must keep
+  `{{ .RedirectTo }}` and `{{ .TokenHash }}` in the button link. The app sends
+  `{{ .RedirectTo }}` from the browser origin where signup/sign-in/reset was
+  requested, so these email links return to that same host.
+- Invite and Email Change templates must keep `{{ .ConfirmationURL }}` unless
+  the app starts sending an explicit redirect URL for those flows too.
 - Reauthentication must keep `{{ .Token }}`.
 - Email Change can use `{{ .NewEmail }}`.
 
-Do not replace `{{ .ConfirmationURL }}` with `{{ .SiteURL }}`. The
-confirmation URL includes the `redirect_to` value that the app sends to
-Supabase. Replacing it can cause users to land on the wrong domain.
+Do not replace `{{ .RedirectTo }}` or `{{ .ConfirmationURL }}` with
+`{{ .SiteURL }}`. `{{ .SiteURL }}` is the Supabase project default and can send
+users to `localhost` when the project is reused by a deployed app.
 
 ## 6. Paste security notification templates
 
@@ -165,9 +169,8 @@ After saving templates and URL settings:
    project.
 2. Open the confirmation email.
 3. The email should show Guestnix branding.
-4. The button URL may start with your Supabase project domain, but it must
-   include `redirect_to=https://guestnix.com/api/auth/callback...` for prod, or
-   your selected dev/staging URL for dev.
+4. The button URL should start with the app URL where signup happened and point
+   to `/api/auth/callback` with `token_hash` and `type` query params.
 5. Click the button and confirm you land back in the correct app.
 6. Test Magic Link from `/login`.
 7. Test Reset Password if that flow is enabled.

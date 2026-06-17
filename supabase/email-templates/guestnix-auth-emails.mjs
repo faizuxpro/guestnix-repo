@@ -109,6 +109,10 @@ function codeBlock(code) {
   `;
 }
 
+function appAuthLink(type) {
+  return `{{ .RedirectTo }}&amp;token_hash={{ .TokenHash }}&amp;type=${type}`;
+}
+
 function layout({ preheader, eyebrow, title, body, cta }) {
   return `
     <!doctype html>
@@ -182,7 +186,7 @@ export const authEmailConfig = {
       "Welcome to Guestnix. Confirm your email address to activate your account and start building your digital welcome guide.",
       "This link is single-use and expires automatically for your security."
     ),
-    cta: button("Confirm email", "{{ .ConfirmationURL }}"),
+    cta: button("Confirm email", appAuthLink("email")),
   }),
 
   mailer_subjects_magic_link: "Your Guestnix sign-in link",
@@ -194,7 +198,7 @@ export const authEmailConfig = {
       "Use this secure link to sign in to your Guestnix account.",
       "If you did not request this email, you can safely ignore it."
     ),
-    cta: button("Sign in", "{{ .ConfirmationURL }}"),
+    cta: button("Sign in", appAuthLink("email")),
   }),
 
   mailer_subjects_recovery: "Reset your Guestnix password",
@@ -206,7 +210,7 @@ export const authEmailConfig = {
       "We received a request to reset the password for your Guestnix account.",
       "Use the link below to choose a new password. If you did not request this, no action is needed."
     ),
-    cta: button("Reset password", "{{ .ConfirmationURL }}"),
+    cta: button("Reset password", appAuthLink("recovery")),
   }),
 
   mailer_subjects_invite: "You have been invited to Guestnix",

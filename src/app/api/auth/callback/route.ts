@@ -5,15 +5,41 @@ import { productEvents } from "@/lib/analytics/product";
 import { trackServerProductEvent } from "@/lib/analytics/posthog-server";
 import { syncProductUserProfile } from "@/lib/analytics/product-user";
 
+type EmailOtpType =
+  | "signup"
+  | "invite"
+  | "magiclink"
+  | "recovery"
+  | "email_change"
+  | "email";
+
+const EMAIL_OTP_TYPES = new Set<EmailOtpType>([
+  "signup",
+  "invite",
+  "magiclink",
+  "recovery",
+  "email_change",
+  "email",
+]);
+
+function getEmailOtpType(value: string | null): EmailOtpType | null {
+  if (!value) return null;
+
+  return EMAIL_OTP_TYPES.has(value as EmailOtpType)
+    ? (value as EmailOtpType)
+    : null;
+}
+
 export async function GET(request: NextRequest) {
   const { searchParams, origin } = new URL(request.url);
   const code = searchParams.get("code");
+  const tokenHash = searchParams.get("token_hash");
+  const type = getEmailOtpType(searchParams.get("type"));
   const redirect = safeRelativePath(searchParams.get("redirect"));
 
-  if (code) {
-    const supabaseResponse = NextResponse.redirect(new URL(redirect, origin));
+  if (code || (tokenHash && type)) {
     const redirectUrl = new URL(redirect, origin);
-    const flow = redirectUrl.searchParams.get("flow");
+    const supabaseResponse = NextResponse.redirect(redirectUrl);
 
     const supabase = createServerClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -32,7 +58,12 @@ export async function GET(request: NextRequest) {
       }
     );
 
-    const { data, error } = await supabase.auth.exchangeCodeForSession(code);
+    const { data, error } = code
+      ? await supabase.auth.exchangeCodeForSession(code)
+      : await supabase.auth.verifyOtp({
+          token_hash: tokenHash!,
+          type: type!,
+        });
 
     if (error) {
       return NextResponse.redirect(
@@ -40,6 +71,7 @@ export async function GET(request: NextRequest) {
       );
     }
 
+    const flow = redirectUrl.searchParams.get("flow");
     const userId = data.session?.user.id;
     try {
       if (userId && flow === "signup") {
