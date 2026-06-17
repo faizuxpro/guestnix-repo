@@ -76,6 +76,7 @@ import {
   ACCENT_PRESETS,
   ColorPicker,
   PRIMARY_PRESETS,
+  SECONDARY_PRESETS,
 } from "@/components/editor/featured/controls/ColorPicker";
 import { PremiumSlider } from "@/components/editor/featured/controls/PremiumSlider";
 import {
@@ -187,6 +188,8 @@ type CalloutColorRole =
   | "muted"
   | "border";
 
+type CalloutIconPosition = "left" | "top" | "right";
+
 type ContactRowsStyle =
   | "clean_cards"
   | "compact_list"
@@ -262,10 +265,15 @@ type TextCallout = {
   ctaEnabled: boolean;
   cardStyle: CalloutCardStyle;
   bodyEnabled: boolean;
+  showIcon: boolean;
+  iconPosition: CalloutIconPosition;
   iconSize: number;
+  iconContainerSize: number;
   mobileStack: boolean;
   accentRole: CalloutColorRole;
   accentColor: string;
+  iconBoxGradientStart: string;
+  iconBoxGradientEnd: string;
   styleId: string;
   styleCustomized: boolean;
 };
@@ -276,10 +284,15 @@ type CalloutStylePresetContent = Pick<
   | "ctaEnabled"
   | "cardStyle"
   | "bodyEnabled"
+  | "showIcon"
+  | "iconPosition"
   | "iconSize"
+  | "iconContainerSize"
   | "mobileStack"
   | "accentRole"
   | "accentColor"
+  | "iconBoxGradientStart"
+  | "iconBoxGradientEnd"
 >;
 
 type CalloutStylePreset = {
@@ -299,17 +312,17 @@ const CALLOUT_CARD_STYLES: Array<{
   value: CalloutCardStyle;
   label: string;
 }> = [
-  { value: "simple", label: "01. Simple" },
-  { value: "hover_elevation", label: "02. Hover Elevation" },
-  { value: "watermark_scale", label: "03. Watermark Scale" },
-  { value: "overlapping_badge", label: "04. Overlapping Badge" },
-  { value: "kinetic_border", label: "05. Kinetic Border" },
-  { value: "radar_notification", label: "06. Radar Notification" },
-  { value: "split_pane", label: "07. Split Pane" },
-  { value: "brutalist_press", label: "08. Brutalist Press" },
-  { value: "serif_shift", label: "09. Serif Shift" },
-  { value: "minimalist_inline", label: "10. Minimalist Inline" },
-  { value: "icon_box", label: "11. Icon Box" },
+  { value: "icon_box", label: "01. Icon Box" },
+  { value: "simple", label: "02. Simple" },
+  { value: "hover_elevation", label: "03. Hover Elevation" },
+  { value: "watermark_scale", label: "04. Watermark Scale" },
+  { value: "overlapping_badge", label: "05. Overlapping Badge" },
+  { value: "kinetic_border", label: "06. Kinetic Border" },
+  { value: "radar_notification", label: "07. Radar Notification" },
+  { value: "split_pane", label: "08. Split Pane" },
+  { value: "brutalist_press", label: "09. Brutalist Press" },
+  { value: "serif_shift", label: "10. Serif Shift" },
+  { value: "minimalist_inline", label: "11. Minimalist Inline" },
 ];
 
 const CALLOUT_CARD_STYLE_VALUES = CALLOUT_CARD_STYLES.map(
@@ -330,6 +343,19 @@ const CALLOUT_COLOR_ROLES: Array<{
 
 const CALLOUT_COLOR_ROLE_VALUES = CALLOUT_COLOR_ROLES.map(
   (role) => role.value
+);
+
+const CALLOUT_ICON_POSITIONS: Array<{
+  value: CalloutIconPosition;
+  label: string;
+}> = [
+  { value: "left", label: "Left" },
+  { value: "top", label: "Top" },
+  { value: "right", label: "Right" },
+];
+
+const CALLOUT_ICON_POSITION_VALUES = CALLOUT_ICON_POSITIONS.map(
+  (position) => position.value
 );
 
 const CONTACT_ROW_STYLES: Array<{
@@ -489,6 +515,24 @@ function coerceCalloutIconSize(value: unknown): number {
   return Math.min(2, Math.max(0.75, numeric));
 }
 
+function coerceCalloutIconContainerSize(value: unknown): number {
+  const numeric =
+    typeof value === "number"
+      ? value
+      : typeof value === "string"
+      ? Number(value)
+      : Number.NaN;
+  if (!Number.isFinite(numeric)) return 1;
+  return Math.min(2.5, Math.max(0.65, numeric));
+}
+
+function coerceCalloutIconPosition(value: unknown): CalloutIconPosition {
+  if (CALLOUT_ICON_POSITION_VALUES.includes(value as CalloutIconPosition)) {
+    return value as CalloutIconPosition;
+  }
+  return "left";
+}
+
 function readSettingString(value: unknown) {
   return typeof value === "string" ? value : "";
 }
@@ -517,10 +561,17 @@ function sanitizeCalloutStyleContent(
     ctaEnabled: content.ctaEnabled === true,
     cardStyle: coerceCalloutCardStyle(content.cardStyle),
     bodyEnabled: content.bodyEnabled === true,
+    showIcon: content.showIcon !== false,
+    iconPosition: coerceCalloutIconPosition(content.iconPosition),
     iconSize: coerceCalloutIconSize(content.iconSize),
+    iconContainerSize: coerceCalloutIconContainerSize(
+      content.iconContainerSize
+    ),
     mobileStack: content.mobileStack === true,
     accentRole: coerceCalloutColorRole(content.accentRole, "secondary"),
     accentColor: normalizeHexColor(content.accentColor),
+    iconBoxGradientStart: normalizeHexColor(content.iconBoxGradientStart),
+    iconBoxGradientEnd: normalizeHexColor(content.iconBoxGradientEnd),
   };
 }
 
@@ -847,7 +898,16 @@ function readCallout(
         : typeof raw.body_enabled === "boolean"
         ? raw.body_enabled
         : hasMeaningfulHtml(content.html),
+    showIcon:
+      typeof style?.showIcon === "boolean"
+        ? style.showIcon
+        : raw.show_icon !== false,
+    iconPosition:
+      style?.iconPosition ?? coerceCalloutIconPosition(raw.icon_position),
     iconSize: style?.iconSize ?? coerceCalloutIconSize(raw.icon_size),
+    iconContainerSize:
+      style?.iconContainerSize ??
+      coerceCalloutIconContainerSize(raw.icon_container_size),
     mobileStack:
       typeof style?.mobileStack === "boolean"
         ? style.mobileStack
@@ -855,6 +915,11 @@ function readCallout(
     accentRole:
       style?.accentRole ?? coerceCalloutColorRole(raw.accent_role, "secondary"),
     accentColor: style?.accentColor ?? normalizeHexColor(raw.accent_color),
+    iconBoxGradientStart:
+      style?.iconBoxGradientStart ??
+      normalizeHexColor(raw.icon_box_gradient_start),
+    iconBoxGradientEnd:
+      style?.iconBoxGradientEnd ?? normalizeHexColor(raw.icon_box_gradient_end),
     styleId: typeof raw.style_id === "string" ? raw.style_id : "",
     styleCustomized: raw.style_customized === true,
   };
@@ -1574,10 +1639,15 @@ export function TextBlockEditor({ block, onChange }: Props) {
     ctaEnabled: callout.ctaEnabled,
     cardStyle: callout.cardStyle,
     bodyEnabled: callout.bodyEnabled,
+    showIcon: callout.showIcon,
+    iconPosition: callout.iconPosition,
     iconSize: callout.iconSize,
+    iconContainerSize: callout.iconContainerSize,
     mobileStack: callout.mobileStack,
     accentRole: callout.accentRole,
     accentColor: callout.accentColor,
+    iconBoxGradientStart: callout.iconBoxGradientStart,
+    iconBoxGradientEnd: callout.iconBoxGradientEnd,
   };
   const hasRichTextBody =
     variant === "prose" ||
@@ -1656,10 +1726,16 @@ export function TextBlockEditor({ block, onChange }: Props) {
         cta_enabled: nextCallout.ctaEnabled,
         card_style: nextCallout.cardStyle,
         body_enabled: nextCallout.bodyEnabled,
+        show_icon: nextCallout.showIcon,
+        icon_position: nextCallout.iconPosition,
         icon_size: nextCallout.iconSize,
+        icon_container_size: nextCallout.iconContainerSize,
         mobile_stack: nextCallout.mobileStack,
         accent_role: nextCallout.accentRole,
         accent_color: nextCallout.accentColor || undefined,
+        icon_box_gradient_start:
+          nextCallout.iconBoxGradientStart || undefined,
+        icon_box_gradient_end: nextCallout.iconBoxGradientEnd || undefined,
         style_id: nextCallout.styleId,
         style_customized: nextCallout.styleCustomized,
       },
@@ -1878,7 +1954,15 @@ export function TextBlockEditor({ block, onChange }: Props) {
                   patchCalloutStyle({
                     cardStyle,
                     ...(cardStyle === "simple"
-                      ? { icon: "", iconSize: 1 }
+                      ? {
+                          icon: "",
+                          showIcon: false,
+                          iconPosition: "left",
+                          iconSize: 1,
+                          iconContainerSize: 1,
+                          iconBoxGradientStart: "",
+                          iconBoxGradientEnd: "",
+                        }
                       : {}),
                   });
                 }}
@@ -1897,18 +1981,158 @@ export function TextBlockEditor({ block, onChange }: Props) {
             </div>
 
             {callout.cardStyle !== "simple" ? (
-              <div className="grid gap-1.5">
-                <Label>Icon</Label>
-                <IconifyPicker
-                  value={callout.icon}
-                  onChange={(icon) => patchCalloutStyle({ icon })}
-                  ariaLabel="Select info card icon"
-                  triggerClassName="h-12 w-12 rounded-md border border-border/70 text-foreground"
-                  iconClassName="text-2xl"
+              <div className="flex items-center justify-between gap-3 rounded-md bg-muted/25 px-2.5 py-2">
+                <Label htmlFor={`callout-show-icon-${block.id}`}>
+                  Show icon
+                </Label>
+                <Switch
+                  id={`callout-show-icon-${block.id}`}
+                  checked={callout.showIcon}
+                  onCheckedChange={(checked) =>
+                    patchCalloutStyle({
+                      showIcon: checked,
+                    })
+                  }
+                  size="sm"
                 />
               </div>
             ) : null}
           </div>
+
+          {callout.cardStyle !== "simple" && callout.showIcon ? (
+            <div className="grid gap-3 rounded-md border border-border/55 bg-background/70 p-2.5">
+              <div className="grid gap-2 sm:grid-cols-2">
+                <div className="grid gap-1.5">
+                  <Label>Icon</Label>
+                  <IconifyPicker
+                    value={callout.icon}
+                    onChange={(icon) => patchCalloutStyle({ icon })}
+                    ariaLabel="Select info card icon"
+                    triggerClassName="h-12 w-12 rounded-md border border-border/70 text-foreground"
+                    iconClassName="text-2xl"
+                  />
+                </div>
+
+                {callout.cardStyle === "icon_box" ? (
+                  <div className="grid gap-1.5">
+                    <Label>Icon box placement</Label>
+                    <Select
+                      value={callout.iconPosition}
+                      onValueChange={(value) =>
+                        patchCalloutStyle({
+                          iconPosition: coerceCalloutIconPosition(value),
+                        })
+                      }
+                    >
+                      <SelectTrigger className="w-full">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {CALLOUT_ICON_POSITIONS.map((option) => (
+                          <SelectItem key={option.value} value={option.value}>
+                            {option.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                ) : null}
+              </div>
+
+              <div className="grid gap-3 sm:grid-cols-2">
+                <PremiumSlider
+                  label="Icon size"
+                  value={callout.iconSize}
+                  min={0.75}
+                  max={2}
+                  step={0.05}
+                  onChange={(value) =>
+                    patchCalloutStyle({
+                      iconSize: coerceCalloutIconSize(value),
+                    })
+                  }
+                  format={(value) => `${Math.round(value * 100)}%`}
+                  marks={[
+                    { value: 0.75, label: "Small" },
+                    { value: 1, label: "Default" },
+                    { value: 2, label: "Large" },
+                  ]}
+                />
+
+                <PremiumSlider
+                  label="Icon container size"
+                  value={callout.iconContainerSize}
+                  min={0.65}
+                  max={2.5}
+                  step={0.05}
+                  onChange={(value) =>
+                    patchCalloutStyle({
+                      iconContainerSize:
+                        coerceCalloutIconContainerSize(value),
+                    })
+                  }
+                  format={(value) => `${Math.round(value * 100)}%`}
+                  marks={[
+                    { value: 0.65, label: "Small" },
+                    { value: 1, label: "Default" },
+                    { value: 2.5, label: "Large" },
+                  ]}
+                />
+              </div>
+
+              {callout.cardStyle === "icon_box" ? (
+                <div className="grid gap-2">
+                  <Label>Icon box gradient</Label>
+                  <div className="flex flex-wrap items-center gap-2 rounded-md bg-muted/25 px-2.5 py-2">
+                    <ColorPicker
+                      label="Start"
+                      value={
+                        callout.iconBoxGradientStart ||
+                        callout.accentColor ||
+                        "#0F172A"
+                      }
+                      onChange={(color) =>
+                        patchCalloutStyle({
+                          iconBoxGradientStart: color,
+                        })
+                      }
+                      presets={[...PRIMARY_PRESETS, ...SECONDARY_PRESETS]}
+                      compact
+                    />
+                    <ColorPicker
+                      label="End"
+                      value={
+                        callout.iconBoxGradientEnd ||
+                        callout.accentColor ||
+                        "#38BDF8"
+                      }
+                      onChange={(color) =>
+                        patchCalloutStyle({
+                          iconBoxGradientEnd: color,
+                        })
+                      }
+                      presets={[...SECONDARY_PRESETS, ...ACCENT_PRESETS]}
+                      compact
+                    />
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      className="ml-auto"
+                      onClick={() =>
+                        patchCalloutStyle({
+                          iconBoxGradientStart: "",
+                          iconBoxGradientEnd: "",
+                        })
+                      }
+                    >
+                      Reset
+                    </Button>
+                  </div>
+                </div>
+              ) : null}
+            </div>
+          ) : null}
 
           <div className="grid gap-2 sm:grid-cols-3">
             <div className="flex items-center justify-between gap-3 rounded-md bg-muted/25 px-2.5 py-2">
@@ -1960,27 +2184,6 @@ export function TextBlockEditor({ block, onChange }: Props) {
               />
             </div>
           </div>
-
-          {callout.cardStyle !== "simple" ? (
-            <PremiumSlider
-              label="Guidebook Icon Size"
-              value={callout.iconSize}
-              min={0.75}
-              max={2}
-              step={0.05}
-              onChange={(value) =>
-                patchCalloutStyle({
-                  iconSize: coerceCalloutIconSize(value),
-                })
-              }
-              format={(value) => `${Math.round(value * 100)}%`}
-              marks={[
-                { value: 0.75, label: "Small" },
-                { value: 1, label: "Default" },
-                { value: 2, label: "Large" },
-              ]}
-            />
-          ) : null}
 
           <div className="grid gap-2 rounded-md border border-border/55 bg-background/70 p-2.5">
             <div className="flex items-center justify-between gap-2">

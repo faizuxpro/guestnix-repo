@@ -91,6 +91,8 @@ type CalloutColorRole =
   | "muted"
   | "border";
 
+type CalloutIconPosition = "left" | "top" | "right";
+
 type ContactRowsStyle =
   | "clean_cards"
   | "compact_list"
@@ -166,10 +168,15 @@ type TextCallout = {
   ctaEnabled: boolean;
   cardStyle: CalloutCardStyle;
   bodyEnabled: boolean;
+  showIcon: boolean;
+  iconPosition: CalloutIconPosition;
   iconSize: number;
+  iconContainerSize: number;
   mobileStack: boolean;
   accentRole: CalloutColorRole;
   accentColor: string;
+  iconBoxGradientStart: string;
+  iconBoxGradientEnd: string;
 };
 
 type CalloutStylePresetContent = {
@@ -177,10 +184,15 @@ type CalloutStylePresetContent = {
   ctaEnabled?: boolean;
   cardStyle?: CalloutCardStyle;
   bodyEnabled?: boolean;
+  showIcon?: boolean;
+  iconPosition?: CalloutIconPosition;
   iconSize?: number;
+  iconContainerSize?: number;
   mobileStack?: boolean;
   accentRole?: CalloutColorRole;
   accentColor?: string;
+  iconBoxGradientStart?: string;
+  iconBoxGradientEnd?: string;
 };
 
 type CalloutStylePreset = {
@@ -213,6 +225,12 @@ const CALLOUT_COLOR_ROLES: CalloutColorRole[] = [
   "ink",
   "muted",
   "border",
+];
+
+const CALLOUT_ICON_POSITIONS: CalloutIconPosition[] = [
+  "left",
+  "top",
+  "right",
 ];
 
 const CONTACT_ROW_STYLES: ContactRowsStyle[] = [
@@ -454,6 +472,24 @@ function readCalloutIconSize(value: unknown): number {
   return Math.min(2, Math.max(0.75, numeric));
 }
 
+function readCalloutIconContainerSize(value: unknown): number {
+  const numeric =
+    typeof value === "number"
+      ? value
+      : typeof value === "string"
+      ? Number(value)
+      : Number.NaN;
+  if (!Number.isFinite(numeric)) return 1;
+  return Math.min(2.5, Math.max(0.65, numeric));
+}
+
+function readCalloutIconPosition(value: unknown): CalloutIconPosition {
+  if (CALLOUT_ICON_POSITIONS.includes(value as CalloutIconPosition)) {
+    return value as CalloutIconPosition;
+  }
+  return "left";
+}
+
 function sanitizeCalloutStyleContent(
   content: Partial<CalloutStylePresetContent>
 ): Partial<CalloutStylePresetContent> {
@@ -462,10 +498,17 @@ function sanitizeCalloutStyleContent(
     ctaEnabled: content.ctaEnabled === true,
     cardStyle: readCalloutCardStyle(content.cardStyle),
     bodyEnabled: content.bodyEnabled === true,
+    showIcon: content.showIcon !== false,
+    iconPosition: readCalloutIconPosition(content.iconPosition),
     iconSize: readCalloutIconSize(content.iconSize),
+    iconContainerSize: readCalloutIconContainerSize(
+      content.iconContainerSize
+    ),
     mobileStack: content.mobileStack === true,
     accentRole: readCalloutColorRole(content.accentRole, "secondary"),
     accentColor: normalizeHexColor(content.accentColor),
+    iconBoxGradientStart: normalizeHexColor(content.iconBoxGradientStart),
+    iconBoxGradientEnd: normalizeHexColor(content.iconBoxGradientEnd),
   };
 }
 
@@ -637,10 +680,15 @@ function resolveCalloutRaw(
     ...raw,
     icon: styleContent.icon,
     card_style: styleContent.cardStyle,
+    show_icon: styleContent.showIcon,
+    icon_position: styleContent.iconPosition,
     icon_size: styleContent.iconSize,
+    icon_container_size: styleContent.iconContainerSize,
     mobile_stack: styleContent.mobileStack,
     accent_role: styleContent.accentRole,
     accent_color: styleContent.accentColor,
+    icon_box_gradient_start: styleContent.iconBoxGradientStart,
+    icon_box_gradient_end: styleContent.iconBoxGradientEnd,
     body_enabled: styleContent.bodyEnabled,
     cta_enabled: styleContent.ctaEnabled,
   };
@@ -686,10 +734,15 @@ function readCallout(
       typeof raw.body_enabled === "boolean"
         ? raw.body_enabled
         : hasMeaningfulHtml(readHtml(content)),
+    showIcon: raw.show_icon !== false,
+    iconPosition: readCalloutIconPosition(raw.icon_position),
     iconSize: readCalloutIconSize(raw.icon_size),
+    iconContainerSize: readCalloutIconContainerSize(raw.icon_container_size),
     mobileStack: raw.mobile_stack === true,
     accentRole: readCalloutColorRole(raw.accent_role, "secondary"),
     accentColor: normalizeHexColor(raw.accent_color),
+    iconBoxGradientStart: normalizeHexColor(raw.icon_box_gradient_start),
+    iconBoxGradientEnd: normalizeHexColor(raw.icon_box_gradient_end),
   };
 }
 
@@ -1176,6 +1229,7 @@ export function TextBlock({
     ) : null;
     const isSplitPane = callout.cardStyle === "split_pane";
     const isSimple = callout.cardStyle === "simple";
+    const showIcon = !isSimple && callout.showIcon;
 
     return (
       <div
@@ -1184,10 +1238,25 @@ export function TextBlock({
         data-color-role={callout.accentRole}
         data-has-action={hasAction ? "true" : "false"}
         data-has-body={showHtml ? "true" : "false"}
+        data-icon-position={callout.iconPosition}
+        data-icon-visible={showIcon ? "true" : "false"}
         data-mobile-stack={callout.mobileStack ? "true" : "false"}
         style={
           {
             "--sl-callout-icon-scale": callout.iconSize,
+            "--sl-callout-icon-container-scale": callout.iconContainerSize,
+            ...(callout.iconBoxGradientStart
+              ? {
+                  "--sl-callout-icon-box-gradient-start":
+                    callout.iconBoxGradientStart,
+                }
+              : {}),
+            ...(callout.iconBoxGradientEnd
+              ? {
+                  "--sl-callout-icon-box-gradient-end":
+                    callout.iconBoxGradientEnd,
+                }
+              : {}),
             ...blockColorOverrideVars([
               {
                 value: callout.accentColor,
@@ -1198,7 +1267,7 @@ export function TextBlock({
           } as CSSProperties
         }
       >
-        {!isSimple ? <CalloutMedia callout={callout} /> : null}
+        {showIcon ? <CalloutMedia callout={callout} /> : null}
 
         <div className="sl-callout-content">
           {callout.eyebrow ? (

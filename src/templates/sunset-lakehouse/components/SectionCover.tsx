@@ -55,8 +55,9 @@ export function SectionCover({
 
   const imageUrl =
     settings.image_url || fallbackImageUrl || SECTION_COVER_FALLBACK_IMAGE;
-  const headline =
-    settings.title_text.trim() || section.title || "Untitled section";
+  const headline = settings.title_enabled
+    ? settings.title_text.trim() || section.title || "Untitled section"
+    : "";
   const style: CSSProperties & Record<string, string> = {
     "--sl-section-cover-image": cssUrl(imageUrl),
     "--sl-section-cover-x": `${settings.image_position.x}%`,
@@ -89,15 +90,17 @@ export function SectionCover({
         "Edit section cover"
       )}
     >
-      <div
-        className="sl-section-cover-title"
-        {...editorInspectAttributes(
-          { kind: "section", sectionId: section.id, focus: "cover_title" },
-          "Edit cover title"
-        )}
-      >
-        <span className="sl-section-cover-title-text">{headline}</span>
-      </div>
+      {settings.title_enabled ? (
+        <div
+          className="sl-section-cover-title"
+          {...editorInspectAttributes(
+            { kind: "section", sectionId: section.id, focus: "cover_title" },
+            "Edit cover title"
+          )}
+        >
+          <span className="sl-section-cover-title-text">{headline}</span>
+        </div>
+      ) : null}
     </div>
   );
 }

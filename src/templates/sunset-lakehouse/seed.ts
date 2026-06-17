@@ -125,6 +125,7 @@ const sectionCoverDesign: SectionCoverDesignSettings = {
   enabled: true,
   height: "medium",
   overlay_opacity: 0.18,
+  title_enabled: true,
   title_position: "center",
   title_align: "center",
   title_style: "glass",

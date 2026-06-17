@@ -64,6 +64,8 @@ export type CalloutColorRole =
   | "muted"
   | "border";
 
+export type CalloutIconPosition = "left" | "top" | "right";
+
 export type ContactRowsStyle =
   | "clean_cards"
   | "compact_list"
@@ -201,10 +203,15 @@ export interface TextContent {
     cta_enabled?: boolean;
     card_style?: CalloutCardStyle;
     body_enabled?: boolean;
+    show_icon?: boolean;
+    icon_position?: CalloutIconPosition;
     icon_size?: number;
+    icon_container_size?: number;
     mobile_stack?: boolean;
     accent_role?: CalloutColorRole;
     accent_color?: string;
+    icon_box_gradient_start?: string;
+    icon_box_gradient_end?: string;
     style_id?: string;
     style_customized?: boolean;
   };

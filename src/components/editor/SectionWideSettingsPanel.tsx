@@ -278,6 +278,7 @@ function writeCoverDesignSettings(
       enabled: next.enabled,
       height: next.height,
       overlay_opacity: next.overlay_opacity,
+      title_enabled: next.title_enabled,
       title_position: next.title_position,
       title_align: next.title_align,
       title_style: next.title_style,
@@ -438,6 +439,9 @@ export function SectionWideSettingsPanel({
     : "mixed";
   const sectionIndex = normalizeSectionIndexSettings(guidebookSettings);
   const cover = normalizeSectionCoverSettings(null, guidebookSettings);
+  const coverTitleHasFrame = cover.title_style !== "minimal";
+  const coverTitleColorLabel =
+    cover.title_style === "outline" ? "Border color" : "Title bg";
 
   const patchDesign = (patch: Partial<SectionCoverDesignSettings>) => {
     updateGuidebookSettings(writeCoverDesignSettings(cover, patch));
@@ -1006,7 +1010,11 @@ export function SectionWideSettingsPanel({
                       (item) => item.id === presetId
                     );
                     if (preset) {
-                      patchDesign({ enabled: true, ...preset.patch });
+                      patchDesign({
+                        enabled: true,
+                        title_enabled: true,
+                        ...preset.patch,
+                      });
                     }
                   }}
                   options={COVER_PRESETS.map((preset) => ({
@@ -1037,110 +1045,150 @@ export function SectionWideSettingsPanel({
 
                 <div className="h-px bg-border/55" />
 
-                <SelectRow<SectionCoverTitlePosition>
-                  label="Title position"
-                  inline
-                  value={cover.title_position}
-                  onChange={(title_position) => patchDesign({ title_position })}
-                  options={COVER_TITLE_POSITION_OPTIONS}
-                />
-
-                <SelectRow<SectionCoverTitleAlign>
-                  label="Title align"
-                  inline
-                  value={cover.title_align}
-                  onChange={(title_align) => patchDesign({ title_align })}
-                  options={COVER_TITLE_ALIGN_OPTIONS}
-                />
-
-                <SelectRow<SectionCoverTitleStyle>
-                  label="Title style"
-                  inline
-                  value={cover.title_style}
-                  onChange={(title_style) => patchDesign({ title_style })}
-                  options={COVER_TITLE_STYLE_OPTIONS}
-                />
-
-                <SelectRow<SectionCoverTitleCornerStyle>
-                  label="Background corners"
-                  inline
-                  value={cover.title_corner_style}
-                  onChange={(title_corner_style) =>
-                    patchDesign({ title_corner_style })
+                <ToggleRow
+                  label="Show cover title"
+                  description="Displays the section headline on top of the cover image."
+                  checked={cover.title_enabled}
+                  onCheckedChange={(checked) =>
+                    patchDesign({ title_enabled: checked === true })
                   }
-                  options={COVER_TITLE_CORNER_OPTIONS}
                 />
 
-                <div className="grid grid-cols-2 gap-3">
-                  <SettingsField label="Text color">
-                    <ColorPicker
-                      value={cover.title_color}
-                      onChange={(title_color) => patchDesign({ title_color })}
-                      compact
-                    />
-                  </SettingsField>
-                  <SettingsField label="Title bg">
-                    <ColorPicker
-                      value={cover.title_bg_color}
-                      onChange={(title_bg_color) =>
-                        patchDesign({ title_bg_color })
+                {cover.title_enabled ? (
+                  <>
+                    <SelectRow<SectionCoverTitlePosition>
+                      label="Title position"
+                      inline
+                      value={cover.title_position}
+                      onChange={(title_position) =>
+                        patchDesign({ title_position })
                       }
-                      compact
+                      options={COVER_TITLE_POSITION_OPTIONS}
                     />
-                  </SettingsField>
-                </div>
 
-                <PremiumSlider
-                  value={cover.title_font_size}
-                  min={14}
-                  max={52}
-                  step={1}
-                  label="Text size"
-                  format={(value) => `${value}px`}
-                  onChange={(title_font_size) =>
-                    patchDesign({ title_font_size })
-                  }
-                />
-                <PremiumSlider
-                  value={cover.title_bg_width}
-                  min={0}
-                  max={100}
-                  step={1}
-                  label="Bg min width"
-                  format={(value) => `${value}%`}
-                  onChange={(title_bg_width) => patchDesign({ title_bg_width })}
-                />
-                <PremiumSlider
-                  value={cover.title_box_width}
-                  min={35}
-                  max={100}
-                  step={1}
-                  label="Text box max"
-                  format={(value) => `${value}%`}
-                  onChange={(title_box_width) =>
-                    patchDesign({
-                      title_box_width,
-                      title_bg_width: Math.min(
-                        cover.title_bg_width,
-                        title_box_width
-                      ),
-                    })
-                  }
-                />
-                <PremiumSlider
-                  value={cover.title_radius}
-                  min={0}
-                  max={32}
-                  step={1}
-                  label="Corner radius"
-                  format={(value) => `${value}px`}
-                  onChange={(title_radius) => patchDesign({ title_radius })}
-                />
+                    <SelectRow<SectionCoverTitleAlign>
+                      label="Title align"
+                      inline
+                      value={cover.title_align}
+                      onChange={(title_align) =>
+                        patchDesign({ title_align })
+                      }
+                      options={COVER_TITLE_ALIGN_OPTIONS}
+                    />
 
-                <CoverTitleShadowControls
-                  shadow={cover.title_shadow}
-                  onChange={patchCoverTitleShadow}
-                />
+                    <SelectRow<SectionCoverTitleStyle>
+                      label="Title style"
+                      inline
+                      value={cover.title_style}
+                      onChange={(title_style) =>
+                        patchDesign({ title_style })
+                      }
+                      options={COVER_TITLE_STYLE_OPTIONS}
+                    />
+
+                    {coverTitleHasFrame ? (
+                      <SelectRow<SectionCoverTitleCornerStyle>
+                        label="Background corners"
+                        inline
+                        value={cover.title_corner_style}
+                        onChange={(title_corner_style) =>
+                          patchDesign({ title_corner_style })
+                        }
+                        options={COVER_TITLE_CORNER_OPTIONS}
+                      />
+                    ) : null}
+
+                    <div
+                      className={cn(
+                        "grid gap-3",
+                        coverTitleHasFrame ? "grid-cols-2" : "grid-cols-1"
+                      )}
+                    >
+                      <SettingsField label="Text color">
+                        <ColorPicker
+                          value={cover.title_color}
+                          onChange={(title_color) =>
+                            patchDesign({ title_color })
+                          }
+                          compact
+                        />
+                      </SettingsField>
+                      {coverTitleHasFrame ? (
+                        <SettingsField label={coverTitleColorLabel}>
+                          <ColorPicker
+                            value={cover.title_bg_color}
+                            onChange={(title_bg_color) =>
+                              patchDesign({ title_bg_color })
+                            }
+                            compact
+                          />
+                        </SettingsField>
+                      ) : null}
+                    </div>
+
+                    <PremiumSlider
+                      value={cover.title_font_size}
+                      min={14}
+                      max={52}
+                      step={1}
+                      label="Text size"
+                      format={(value) => `${value}px`}
+                      onChange={(title_font_size) =>
+                        patchDesign({ title_font_size })
+                      }
+                    />
+                    {coverTitleHasFrame ? (
+                      <PremiumSlider
+                        value={cover.title_bg_width}
+                        min={0}
+                        max={100}
+                        step={1}
+                        label="Bg min width"
+                        format={(value) => `${value}%`}
+                        onChange={(title_bg_width) =>
+                          patchDesign({ title_bg_width })
+                        }
+                      />
+                    ) : null}
+                    <PremiumSlider
+                      value={cover.title_box_width}
+                      min={35}
+                      max={100}
+                      step={1}
+                      label="Text box max"
+                      format={(value) => `${value}%`}
+                      onChange={(title_box_width) =>
+                        patchDesign({
+                          title_box_width,
+                          title_bg_width: Math.min(
+                            cover.title_bg_width,
+                            title_box_width
+                          ),
+                        })
+                      }
+                    />
+                    {coverTitleHasFrame &&
+                    cover.title_corner_style !== "sharp" ? (
+                      <PremiumSlider
+                        value={cover.title_radius}
+                        min={0}
+                        max={32}
+                        step={1}
+                        label="Corner radius"
+                        format={(value) => `${value}px`}
+                        onChange={(title_radius) =>
+                          patchDesign({ title_radius })
+                        }
+                      />
+                    ) : null}
+
+                    <CoverTitleShadowControls
+                      shadow={cover.title_shadow}
+                      titleStyle={cover.title_style}
+                      onChange={patchCoverTitleShadow}
+                    />
+                  </>
+                ) : null}
               </div>
             </SettingsSection>
           </div>
@@ -1152,16 +1200,23 @@ export function SectionWideSettingsPanel({
 
 function CoverTitleShadowControls({
   shadow,
+  titleStyle,
   onChange,
 }: {
   shadow: SectionCoverTitleShadow;
+  titleStyle: SectionCoverTitleStyle;
   onChange: (patch: Partial<SectionCoverTitleShadow>) => void;
 }) {
+  const description =
+    titleStyle === "minimal"
+      ? "Adds depth to the headline text."
+      : "Adds depth to the headline text and its background.";
+
   return (
     <div className="space-y-3 rounded-md border border-border/60 bg-background/50 p-2.5">
       <ToggleRow
         label="Headline shadow"
-        description="Adds depth to the headline text and its background."
+        description={description}
         checked={shadow.enabled}
         onCheckedChange={(enabled) => onChange({ enabled })}
         className="border-b-0 py-0"

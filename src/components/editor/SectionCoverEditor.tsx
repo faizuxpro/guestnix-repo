@@ -97,7 +97,11 @@ export function SectionCoverEditor({
                 Section cover
               </span>
               <span className="block truncate text-[11px] text-muted-foreground">
-                {cover.enabled ? "Image, focal point, headline" : "Hidden by shared settings"}
+                {!cover.enabled
+                  ? "Hidden by shared settings"
+                  : cover.title_enabled
+                  ? "Image, focal point, headline"
+                  : "Image and focal point"}
               </span>
             </span>
             <ChevronDown
@@ -127,20 +131,22 @@ export function SectionCoverEditor({
 
         <CollapsibleContent className="border-t border-border/60 bg-background">
           <div className={cn("space-y-3 px-3 py-3", !cover.enabled && "opacity-50")}>
-            <SettingsField
-              label="Headline"
-              hint="Leave blank to use the section name."
-            >
-              <Input
-                value={cover.title_text}
-                onChange={(event) =>
-                  patchContent({ title_text: event.target.value })
-                }
-                placeholder={section.title || "Untitled section"}
-                maxLength={160}
-                className="h-9 text-sm"
-              />
-            </SettingsField>
+            {cover.title_enabled ? (
+              <SettingsField
+                label="Headline"
+                hint="Leave blank to use the section name."
+              >
+                <Input
+                  value={cover.title_text}
+                  onChange={(event) =>
+                    patchContent({ title_text: event.target.value })
+                  }
+                  placeholder={section.title || "Untitled section"}
+                  maxLength={160}
+                  className="h-9 text-sm"
+                />
+              </SettingsField>
+            ) : null}
             <ImageUploadField
               label="Cover image"
               value={cover.image_url}

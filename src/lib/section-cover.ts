@@ -41,6 +41,7 @@ export type SectionCoverDesignSettings = {
   enabled: boolean;
   height: SectionCoverHeight;
   overlay_opacity: number;
+  title_enabled: boolean;
   title_position: SectionCoverTitlePosition;
   title_align: SectionCoverTitleAlign;
   title_style: SectionCoverTitleStyle;
@@ -67,6 +68,7 @@ export const DEFAULT_SECTION_COVER_DESIGN_SETTINGS: SectionCoverDesignSettings =
   enabled: true,
   height: "tall",
   overlay_opacity: 0.4,
+  title_enabled: true,
   title_position: "bottom",
   title_align: "center",
   title_style: "solid",
@@ -222,6 +224,10 @@ export function normalizeSectionCoverSettings(
       0,
       0.75
     ),
+    title_enabled:
+      typeof rawDesign.title_enabled === "boolean"
+        ? rawDesign.title_enabled
+        : defaults.title_enabled,
     title_position: readEnum(
       rawDesign.title_position,
       ["top", "center", "bottom"] as const,

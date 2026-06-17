@@ -4942,6 +4942,13 @@
   );
   --sl-callout-card: var(--white);
   --sl-callout-icon-scale: 1;
+  --sl-callout-icon-container-scale: 1;
+  --sl-callout-icon-box-gradient-start: var(--sl-callout-state);
+  --sl-callout-icon-box-gradient-end: color-mix(
+    in oklab,
+    var(--sl-callout-state) 82%,
+    var(--sl-callout-color-2) 18%
+  );
   --sl-callout-soft: color-mix(
     in oklab,
     var(--sl-callout-blend) 12%,
@@ -5051,8 +5058,8 @@
   font-size: calc(
     1.18rem * var(--icon-scale-feature, 1) * var(--sl-callout-icon-scale, 1)
   );
-  height: calc(44px * var(--sl-callout-icon-scale, 1));
-  width: calc(44px * var(--sl-callout-icon-scale, 1));
+  height: calc(44px * var(--sl-callout-icon-container-scale, 1));
+  width: calc(44px * var(--sl-callout-icon-container-scale, 1));
 }
 .tpl-sunset .sl-callout-icon .host-icon,
 .tpl-sunset .sl-callout-pane .host-icon,
@@ -5144,14 +5151,14 @@
   bottom: -30px;
   color: var(--sl-callout-state);
   font-size: calc(8.75rem * var(--sl-callout-icon-scale, 1));
-  height: calc(140px * var(--sl-callout-icon-scale, 1));
+  height: calc(140px * var(--sl-callout-icon-container-scale, 1));
   opacity: 0.06;
   position: absolute;
   right: -20px;
   transition:
     opacity 0.6s ease,
     transform 0.6s cubic-bezier(0.25, 1, 0.5, 1);
-  width: calc(140px * var(--sl-callout-icon-scale, 1));
+  width: calc(140px * var(--sl-callout-icon-container-scale, 1));
   z-index: 1;
 }
 .tpl-sunset .sl-callout[data-card-style="watermark_scale"]:hover .sl-callout-watermark {
@@ -5182,12 +5189,12 @@
   font-size: calc(
     1.1rem * var(--icon-scale-feature, 1) * var(--sl-callout-icon-scale, 1)
   );
-  height: calc(48px * var(--sl-callout-icon-scale, 1));
+  height: calc(48px * var(--sl-callout-icon-container-scale, 1));
   left: 30px;
   position: absolute;
   top: -24px;
   transition: transform 0.4s cubic-bezier(0.25, 1, 0.5, 1);
-  width: calc(48px * var(--sl-callout-icon-scale, 1));
+  width: calc(48px * var(--sl-callout-icon-container-scale, 1));
   z-index: 3;
 }
 .tpl-sunset .sl-callout[data-card-style="overlapping_badge"]:hover .sl-callout-badge {
@@ -5266,6 +5273,25 @@
   .host-icon {
   transform: rotate(360deg) scale(1.1);
 }
+.tpl-sunset .sl-callout[data-card-style="split_pane"][data-icon-visible="false"] {
+  display: block;
+  padding: 1.35rem 1.55rem;
+}
+.tpl-sunset
+  .sl-callout[data-card-style="split_pane"][data-icon-visible="false"]
+  .sl-callout-content {
+  padding: 0;
+}
+.tpl-sunset
+  .sl-callout[data-card-style="split_pane"][data-icon-visible="false"]
+  .sl-callout-action {
+  margin: 0.9rem 0 0;
+}
+.tpl-sunset
+  .sl-callout[data-card-style="split_pane"][data-icon-visible="false"]
+  > .sl-callout-prose {
+  margin: 0.9rem 0 0;
+}
 .tpl-sunset .sl-callout[data-card-style="brutalist_press"] {
   border: 2px solid var(--sl-callout-state);
   border-radius: 8px;
@@ -5326,9 +5352,9 @@
 }
 .tpl-sunset .sl-callout-radar {
   flex: 0 0 auto;
-  height: calc(44px * var(--sl-callout-icon-scale, 1));
+  height: calc(44px * var(--sl-callout-icon-container-scale, 1));
   position: relative;
-  width: calc(44px * var(--sl-callout-icon-scale, 1));
+  width: calc(44px * var(--sl-callout-icon-container-scale, 1));
   z-index: 2;
 }
 .tpl-sunset .sl-callout-radar .sl-callout-icon {
@@ -5479,12 +5505,22 @@
   opacity: 0.55;
   width: 300px;
 }
+.tpl-sunset
+  .sl-callout[data-card-style="icon_box"][data-icon-position="right"]::before {
+  left: auto;
+  right: calc(1.35rem + 26px);
+  transform: translate(50%, -50%);
+}
+.tpl-sunset
+  .sl-callout[data-card-style="icon_box"][data-icon-position="top"]::before {
+  top: calc(1.2rem + 26px);
+}
 .tpl-sunset .sl-callout[data-card-style="icon_box"] .sl-callout-icon {
   animation: slCalloutIconBoxTilt 8.5s ease-in-out infinite;
   background: linear-gradient(
     135deg,
-    var(--sl-callout-state) 0%,
-    color-mix(in oklab, var(--sl-callout-state) 82%, var(--sl-callout-color-2) 18%) 100%
+    var(--sl-callout-icon-box-gradient-start) 0%,
+    var(--sl-callout-icon-box-gradient-end) 100%
   );
   border-radius: 0.5rem;
   box-shadow: 0 2px 8px color-mix(in oklab, var(--sl-callout-state) 22%, transparent);
@@ -5492,15 +5528,41 @@
   font-size: calc(
     1.25rem * var(--icon-scale-feature, 1) * var(--sl-callout-icon-scale, 1)
   );
-  height: calc(48px * var(--sl-callout-icon-scale, 1));
+  height: calc(48px * var(--sl-callout-icon-container-scale, 1));
   margin-top: 0.05rem;
   overflow: hidden;
   position: relative;
   transition:
     box-shadow 0.25s cubic-bezier(0.4, 0, 0.2, 1),
     transform 0.25s cubic-bezier(0.4, 0, 0.2, 1);
-  width: calc(48px * var(--sl-callout-icon-scale, 1));
+  width: calc(48px * var(--sl-callout-icon-container-scale, 1));
   z-index: 2;
+}
+.tpl-sunset
+  .sl-callout[data-card-style="icon_box"][data-icon-position="top"] {
+  align-items: flex-start;
+  flex-direction: column;
+  min-height: 0;
+}
+.tpl-sunset
+  .sl-callout[data-card-style="icon_box"][data-icon-position="right"] {
+  align-items: flex-start;
+}
+.tpl-sunset
+  .sl-callout[data-card-style="icon_box"][data-icon-position="right"]
+  .sl-callout-content {
+  order: 1;
+}
+.tpl-sunset
+  .sl-callout[data-card-style="icon_box"][data-icon-position="right"]
+  .sl-callout-action {
+  order: 2;
+}
+.tpl-sunset
+  .sl-callout[data-card-style="icon_box"][data-icon-position="right"]
+  .sl-callout-icon {
+  margin-left: auto;
+  order: 3;
 }
 .tpl-sunset .sl-callout[data-card-style="icon_box"] .sl-callout-icon::before {
   animation: slCalloutIconBoxFlare 3.6s ease-in-out infinite;
@@ -5691,6 +5753,21 @@
   .tpl-sunset .sl-callout[data-card-style="split_pane"] > .sl-callout-prose {
     grid-column: 2;
     margin: 0.9rem 1.35rem 1.25rem;
+  }
+  .tpl-sunset
+    .sl-callout[data-card-style="split_pane"][data-icon-visible="false"]
+    .sl-callout-content {
+    padding: 0;
+  }
+  .tpl-sunset
+    .sl-callout[data-card-style="split_pane"][data-icon-visible="false"]
+    .sl-callout-action {
+    margin: 0.9rem 0 0;
+  }
+  .tpl-sunset
+    .sl-callout[data-card-style="split_pane"][data-icon-visible="false"]
+    > .sl-callout-prose {
+    margin: 0.9rem 0 0;
   }
   .tpl-sunset .sl-callout[data-card-style="minimalist_inline"][data-mobile-stack="true"] {
     align-items: flex-start;
