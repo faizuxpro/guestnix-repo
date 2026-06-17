@@ -126,7 +126,7 @@ export function CustomDomainsManager({ guidebookId, guidebookSlug }: Props) {
   // Poll status for any domain that's verified-but-not-active (TLS still
   // issuing). Stop polling when all domains are settled.
   useEffect(() => {
-    const inFlight = domains.filter((d) => d.status === "verified");
+    const inFlight = domains.filter((d) => d.status === "verified" || d.status === "error");
     if (inFlight.length === 0) return;
 
     let cancelled = false;

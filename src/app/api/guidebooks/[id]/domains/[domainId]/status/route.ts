@@ -76,9 +76,9 @@ export async function GET(
   const nextStatus =
     providerStatus.verified && !providerStatus.misconfigured
       ? "active"
-      : providerStatus.sslStatus === "error"
-        ? "error"
-      : domain.status;
+      : domain.status === "active"
+        ? "active"
+        : "verified";
 
   const [updated] = await db
     .update(customDomains)

@@ -52,7 +52,8 @@ export async function resolveCustomDomainToSlug(
     .where(eq(customDomains.domain, host))
     .limit(1);
 
-  const slug = row[0]?.status === "active" ? row[0].slug : null;
+  const status = row[0]?.status;
+  const slug = status === "verified" || status === "active" ? row[0].slug : null;
   cacheSet(host, slug);
   return slug;
 }

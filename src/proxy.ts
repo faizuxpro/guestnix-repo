@@ -24,13 +24,23 @@ function isCanonicalHost(host: string): boolean {
 export async function proxy(request: NextRequest) {
   const rawHost = request.headers.get("host") ?? "";
   const host = rawHost.toLowerCase().replace(/:\d+$/, "");
+  const pathname = request.nextUrl.pathname;
 
   if (!isCanonicalHost(host)) {
+    if (
+      pathname.startsWith("/api/") ||
+      pathname === "/sw.js" ||
+      pathname === "/robots.txt" ||
+      pathname === "/sitemap.xml"
+    ) {
+      return await updateSession(request);
+    }
+
     try {
       const slug = await resolveCustomDomainToSlug(host);
       if (slug) {
         const url = request.nextUrl.clone();
-        const incoming = url.pathname === "/" ? "" : url.pathname;
+        const incoming = pathname === "/" ? "" : pathname;
         url.pathname = `/g/${slug}${incoming}`;
         return NextResponse.rewrite(url);
       }
