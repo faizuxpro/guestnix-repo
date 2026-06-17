@@ -136,7 +136,7 @@ export class HerokuProvider implements CustomDomainProvider {
     try {
       domain = await herokuFetch<HerokuDomain>(path, {
         method: "POST",
-        body: JSON.stringify({ hostname: normalized }),
+        body: JSON.stringify({ hostname: normalized, sni_endpoint: null }),
       });
     } catch (err) {
       const status = (err as Error & { status?: number }).status;
