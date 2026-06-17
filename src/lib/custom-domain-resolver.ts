@@ -1,12 +1,9 @@
 /**
- * Maps an incoming `Host` header to the guidebook slug it should serve.
- * Called from middleware on every non-canonical-host request, so the
- * lookup must be fast — we keep a small in-memory LRU.
+ * Maps an incoming Host header to the guidebook slug it should serve.
  *
- * Custom domains change rarely, so a 5-minute TTL is fine even on
- * serverless edge runtimes (each instance keeps its own cache; cold
- * starts just re-fetch). The host→null entries for unknown hostnames are
- * also cached so we don't DB-thrash on random scanning bots.
+ * Active host matches are cached for a few minutes. Misses are cached only
+ * briefly, because a newly activated custom domain can otherwise look
+ * unrouted on any dyno that cached the pre-activation miss.
  */
 
 import { eq } from "drizzle-orm";
@@ -14,7 +11,8 @@ import { db } from "@/lib/db";
 import { customDomains, guidebooks } from "@/lib/db/schema";
 
 const CACHE_MAX = 500;
-const CACHE_TTL_MS = 5 * 60 * 1000;
+const HIT_CACHE_TTL_MS = 5 * 60 * 1000;
+const MISS_CACHE_TTL_MS = 10 * 1000;
 
 type CacheEntry = { slug: string | null; expiresAt: number };
 const cache = new Map<string, CacheEntry>();
@@ -26,7 +24,6 @@ function cacheGet(host: string): CacheEntry | undefined {
     cache.delete(host);
     return undefined;
   }
-  // LRU touch: re-insert to move to the end.
   cache.delete(host);
   cache.set(host, entry);
   return entry;
@@ -34,17 +31,14 @@ function cacheGet(host: string): CacheEntry | undefined {
 
 function cacheSet(host: string, slug: string | null) {
   if (cache.size >= CACHE_MAX) {
-    // Evict oldest entry (Map iteration order is insertion order).
     const oldestKey = cache.keys().next().value;
     if (oldestKey !== undefined) cache.delete(oldestKey);
   }
-  cache.set(host, { slug, expiresAt: Date.now() + CACHE_TTL_MS });
+
+  const ttl = slug ? HIT_CACHE_TTL_MS : MISS_CACHE_TTL_MS;
+  cache.set(host, { slug, expiresAt: Date.now() + ttl });
 }
 
-/**
- * Returns the published slug for a custom-domain host, or null when the
- * host is unknown / the matching domain isn't active yet.
- */
 export async function resolveCustomDomainToSlug(
   host: string
 ): Promise<string | null> {
@@ -58,20 +52,11 @@ export async function resolveCustomDomainToSlug(
     .where(eq(customDomains.domain, host))
     .limit(1);
 
-  // Only "active" domains route traffic — verified-but-no-cert domains
-  // would 502 since TLS isn't ready yet, so we leave the host unrouted
-  // until the provider finishes.
-  const slug =
-    row[0]?.status === "active" ? row[0].slug : null;
+  const slug = row[0]?.status === "active" ? row[0].slug : null;
   cacheSet(host, slug);
   return slug;
 }
 
-/**
- * Drop a single host from the cache. Called after add/remove/verify so
- * the new state takes effect within milliseconds rather than the 5-min
- * TTL.
- */
 export function invalidateCustomDomainCache(host: string) {
   cache.delete(host);
 }
