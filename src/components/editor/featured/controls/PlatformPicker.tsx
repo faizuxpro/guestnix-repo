@@ -24,6 +24,7 @@ type PlatformMeta = {
   value: HostSocialPlatform;
   label: string;
   Icon: IconComponent;
+  iconifyId: string;
   hue: string;
   placeholder: string;
 };
@@ -33,6 +34,7 @@ export const PLATFORMS: PlatformMeta[] = [
     value: "website",
     label: "Website",
     Icon: Globe,
+    iconifyId: "lucide:globe",
     hue: "#0f766e",
     placeholder: "https://your-site.com",
   },
@@ -40,6 +42,7 @@ export const PLATFORMS: PlatformMeta[] = [
     value: "airbnb",
     label: "Airbnb",
     Icon: LinkIcon,
+    iconifyId: "simple-icons:airbnb",
     hue: "#FF5A5F",
     placeholder: "https://airbnb.com/users/show/…",
   },
@@ -47,6 +50,7 @@ export const PLATFORMS: PlatformMeta[] = [
     value: "facebook",
     label: "Facebook",
     Icon: FacebookIcon,
+    iconifyId: "ph:facebook-logo-fill",
     hue: "#1877F2",
     placeholder: "https://facebook.com/…",
   },
@@ -54,6 +58,7 @@ export const PLATFORMS: PlatformMeta[] = [
     value: "instagram",
     label: "Instagram",
     Icon: InstagramIcon,
+    iconifyId: "ph:instagram-logo-fill",
     hue: "#E1306C",
     placeholder: "https://instagram.com/…",
   },
@@ -61,6 +66,7 @@ export const PLATFORMS: PlatformMeta[] = [
     value: "twitter",
     label: "X / Twitter",
     Icon: TwitterIcon,
+    iconifyId: "ph:x-logo-fill",
     hue: "#0f172a",
     placeholder: "https://x.com/…",
   },
@@ -68,6 +74,7 @@ export const PLATFORMS: PlatformMeta[] = [
     value: "whatsapp",
     label: "WhatsApp",
     Icon: WhatsappIcon,
+    iconifyId: "ph:whatsapp-logo-fill",
     hue: "#25D366",
     placeholder: "+1 555 123 4567 or wa.me link",
   },
@@ -75,6 +82,7 @@ export const PLATFORMS: PlatformMeta[] = [
     value: "youtube",
     label: "YouTube",
     Icon: YoutubeIcon,
+    iconifyId: "ph:youtube-logo-fill",
     hue: "#FF0000",
     placeholder: "https://youtube.com/@…",
   },
@@ -82,6 +90,7 @@ export const PLATFORMS: PlatformMeta[] = [
     value: "tiktok",
     label: "TikTok",
     Icon: TiktokIcon,
+    iconifyId: "ph:tiktok-logo-fill",
     hue: "#0f172a",
     placeholder: "https://tiktok.com/@…",
   },
@@ -89,6 +98,7 @@ export const PLATFORMS: PlatformMeta[] = [
     value: "linkedin",
     label: "LinkedIn",
     Icon: LinkedinIcon,
+    iconifyId: "ph:linkedin-logo-fill",
     hue: "#0A66C2",
     placeholder: "https://linkedin.com/in/…",
   },
@@ -96,6 +106,7 @@ export const PLATFORMS: PlatformMeta[] = [
     value: "other",
     label: "Other",
     Icon: LinkIcon,
+    iconifyId: "lucide:link",
     hue: "#64748b",
     placeholder: "https://…",
   },

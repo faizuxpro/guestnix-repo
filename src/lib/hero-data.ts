@@ -466,6 +466,7 @@ const socialLinkSchema = z.object({
   platform: z.enum(HOST_SOCIAL_PLATFORMS as [HostSocialPlatform, ...HostSocialPlatform[]]),
   url: z.string(),
   label: z.string().optional(),
+  icon: z.string().max(20000).optional(),
 });
 
 // Accept legacy `title`/`subtitle` keys and silently fold them into the new

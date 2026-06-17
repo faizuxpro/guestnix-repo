@@ -41,6 +41,7 @@ export interface HostSocialLink {
   platform: HostSocialPlatform;
   url: string;
   label?: string;
+  icon?: string;
 }
 
 export type CalloutCardStyle =

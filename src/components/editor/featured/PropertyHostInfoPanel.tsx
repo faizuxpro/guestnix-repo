@@ -5,6 +5,7 @@ import {
   Award,
   MapPin,
   Plus,
+  RotateCcw,
   Sparkles,
   Trash2,
   User,
@@ -27,6 +28,7 @@ import {
 } from "@/lib/assets-hub";
 import { cn } from "@/lib/utils";
 import { AssetsHubPickerButton } from "@/components/editor/assets/AssetsHubPickerButton";
+import { IconifyPicker } from "@/components/icons/IconifyPicker";
 import { useEditorStore } from "@/stores/editor-store";
 import type { HostSocialLink } from "@/types/blocks";
 import { FeaturedNavCard } from "./controls/PanelHeader";
@@ -310,6 +312,31 @@ function SocialLinkRow({
             "border-amber-300/70 focus-visible:ring-amber-300/60"
         )}
       />
+
+      <IconifyPicker
+        value={link.icon}
+        onChange={(icon) => onChange({ ...link, icon })}
+        ariaLabel={`Change ${meta.label} icon`}
+        fallbackIconifyId={meta.iconifyId}
+        triggerClassName={cn(
+          "h-9 w-9 rounded-md border border-border/70 bg-background hover:border-primary/45 hover:bg-primary/5",
+          link.icon && "border-primary/35 bg-primary/5 text-primary"
+        )}
+      />
+
+      {link.icon ? (
+        <Button
+          type="button"
+          variant="ghost"
+          size="icon-sm"
+          onClick={() => onChange({ ...link, icon: undefined })}
+          aria-label="Reset icon"
+          title="Reset icon"
+          className="text-muted-foreground hover:text-foreground"
+        >
+          <RotateCcw className="h-3.5 w-3.5" />
+        </Button>
+      ) : null}
 
       <Button
         type="button"

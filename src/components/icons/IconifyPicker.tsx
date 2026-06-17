@@ -67,6 +67,7 @@ type Props = {
   ariaLabel?: string;
   triggerClassName?: string;
   iconClassName?: string;
+  fallbackIconifyId?: string | null;
 };
 
 export function IconifyPicker({
@@ -75,6 +76,7 @@ export function IconifyPicker({
   ariaLabel = "Pick icon",
   triggerClassName,
   iconClassName,
+  fallbackIconifyId = FALLBACK_CURATED_ID,
 }: Props) {
   const [open, setOpen] = useState(false);
   const [tab, setTab] = useState<"curated" | "all" | "upload" | "my">("curated");
@@ -111,7 +113,7 @@ export function IconifyPicker({
         <HostIcon
           value={value}
           className={cn("text-sm", iconClassName)}
-          fallbackIconifyId={FALLBACK_CURATED_ID}
+          fallbackIconifyId={fallbackIconifyId}
         />
       </PopoverTrigger>
       <PopoverContent

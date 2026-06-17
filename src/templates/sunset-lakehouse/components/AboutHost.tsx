@@ -22,6 +22,7 @@ import type {
   HostPhotoSource,
 } from "@/lib/hero-data";
 import { editorInspectAttributes } from "@/lib/editor-inspect";
+import { HostIcon } from "@/components/icons/HostIcon";
 import type { HostSocialLink } from "@/types/blocks";
 
 type IconComponent = ComponentType<{ className?: string; "aria-hidden"?: boolean }>;
@@ -52,18 +53,18 @@ type Props = {
 
 const SOCIAL_META: Record<
   HostSocialLink["platform"],
-  { label: string; Icon: IconComponent }
+  { label: string; Icon: IconComponent; color: string }
 > = {
-  website: { label: "Website", Icon: Globe },
-  airbnb: { label: "Airbnb", Icon: LinkIcon },
-  facebook: { label: "Facebook", Icon: FacebookIcon },
-  instagram: { label: "Instagram", Icon: InstagramIcon },
-  twitter: { label: "Twitter", Icon: TwitterIcon },
-  whatsapp: { label: "WhatsApp", Icon: WhatsappIcon },
-  youtube: { label: "YouTube", Icon: YoutubeIcon },
-  tiktok: { label: "TikTok", Icon: TiktokIcon },
-  linkedin: { label: "LinkedIn", Icon: LinkedinIcon },
-  other: { label: "Link", Icon: LinkIcon },
+  website: { label: "Website", Icon: Globe, color: "#0f766e" },
+  airbnb: { label: "Airbnb", Icon: LinkIcon, color: "#ff5a5f" },
+  facebook: { label: "Facebook", Icon: FacebookIcon, color: "#1877f2" },
+  instagram: { label: "Instagram", Icon: InstagramIcon, color: "#e1306c" },
+  twitter: { label: "Twitter", Icon: TwitterIcon, color: "#0f172a" },
+  whatsapp: { label: "WhatsApp", Icon: WhatsappIcon, color: "#25d366" },
+  youtube: { label: "YouTube", Icon: YoutubeIcon, color: "#ff0000" },
+  tiktok: { label: "TikTok", Icon: TiktokIcon, color: "#0f172a" },
+  linkedin: { label: "LinkedIn", Icon: LinkedinIcon, color: "#0a66c2" },
+  other: { label: "Link", Icon: LinkIcon, color: "#64748b" },
 };
 
 function getInitials(name: string): string {
@@ -283,9 +284,22 @@ export function AboutHost({
                     target="_blank"
                     rel="noreferrer noopener"
                     className="sl-host-social"
+                    style={
+                      {
+                        "--sl-social-color": meta.color,
+                      } as React.CSSProperties
+                    }
                   >
-                    <SocialIcon aria-hidden />
-                    <span>{s.label || meta.label}</span>
+                    <span className="sl-host-social-icon">
+                      {s.icon ? (
+                        <HostIcon value={s.icon} fallbackIconifyId={null} />
+                      ) : (
+                        <SocialIcon aria-hidden />
+                      )}
+                    </span>
+                    <span className="sl-host-social-label">
+                      {s.label || meta.label}
+                    </span>
                   </a>
                 );
               })}
