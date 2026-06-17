@@ -137,6 +137,7 @@ export const BLOCK_OPTIONS: BlockOption[] = [
       facts_config: {
         icon_size: 1,
         accent_role: "secondary",
+        mobile_columns: 1,
       },
       facts: [
         {
@@ -622,6 +623,7 @@ export const BLOCK_OPTIONS: BlockOption[] = [
     icon: ShieldAlert,
     defaultContent: {
       country: "US",
+      custom_services: [],
       custom_contacts: [],
     },
   },

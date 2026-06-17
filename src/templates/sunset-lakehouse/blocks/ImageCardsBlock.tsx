@@ -10,6 +10,7 @@ import type {
   ImageCardsColorRole,
   ImageCardsContent,
   ImageCardsImageFit,
+  ImageCardsImagePlacement,
   ImageCardsImagePosition,
   ImageCardsStyle,
 } from "../types";
@@ -54,10 +55,18 @@ const IMAGE_CARD_ANIMATIONS: ImageCardsAnimation[] = [
   "glow",
 ];
 
-const IMAGE_CARD_FITS: ImageCardsImageFit[] = ["cover", "contain"];
+const IMAGE_CARD_FITS: ImageCardsImageFit[] = ["cover", "contain", "natural"];
 
 const IMAGE_CARD_POSITIONS: ImageCardsImagePosition[] = [
   "center",
+  "top",
+  "bottom",
+  "left",
+  "right",
+];
+
+const IMAGE_CARD_PLACEMENTS: ImageCardsImagePlacement[] = [
+  "style_default",
   "top",
   "bottom",
   "left",
@@ -73,8 +82,13 @@ const IMAGE_CARD_POSITION_VALUES: Record<ImageCardsImagePosition, string> = {
 };
 
 type ImageCardGridStyle = CSSProperties & {
-  "--sl-image-card-fit"?: ImageCardsImageFit;
+  "--sl-image-card-fit"?: "cover" | "contain";
   "--sl-image-card-position"?: string;
+  "--sl-image-card-title-scale"?: number;
+  "--sl-image-card-description-scale"?: number;
+  "--sl-image-card-media-share"?: string;
+  "--sl-image-card-text-share"?: string;
+  "--sl-image-card-media-height"?: string;
 };
 
 type ImageCardItemStyle = CSSProperties & {
@@ -134,6 +148,22 @@ function readImageCardsPosition(value: unknown): ImageCardsImagePosition {
     : "center";
 }
 
+function readImageCardsPlacement(value: unknown): ImageCardsImagePlacement {
+  return IMAGE_CARD_PLACEMENTS.includes(value as ImageCardsImagePlacement)
+    ? (value as ImageCardsImagePlacement)
+    : "style_default";
+}
+
+function readNumber(
+  value: unknown,
+  fallback: number,
+  min: number,
+  max: number
+) {
+  if (typeof value !== "number" || !Number.isFinite(value)) return fallback;
+  return Math.min(max, Math.max(min, value));
+}
+
 function isExternalHref(href: string) {
   return /^https?:\/\//i.test(href);
 }
@@ -162,9 +192,18 @@ export function ImageCardsBlock({
   const animation = readImageCardsAnimation(config?.animation);
   const imageFit = readImageCardsFit(config?.image_fit);
   const imagePosition = readImageCardsPosition(config?.image_position);
+  const imagePlacement = readImageCardsPlacement(config?.image_placement);
+  const imageShare = readNumber(config?.image_share, 42, 25, 75);
+  const titleSize = readNumber(config?.title_size, 100, 70, 160);
+  const descriptionSize = readNumber(config?.description_size, 100, 70, 150);
   const gridStyle: ImageCardGridStyle = {
-    "--sl-image-card-fit": imageFit,
+    "--sl-image-card-fit": imageFit === "natural" ? "contain" : imageFit,
     "--sl-image-card-position": IMAGE_CARD_POSITION_VALUES[imagePosition],
+    "--sl-image-card-title-scale": titleSize / 100,
+    "--sl-image-card-description-scale": descriptionSize / 100,
+    "--sl-image-card-media-share": `${imageShare}%`,
+    "--sl-image-card-text-share": `${100 - imageShare}%`,
+    "--sl-image-card-media-height": `${8 + (imageShare - 25) * 0.16}rem`,
     ...blockColorOverrideVars([
       {
         value: config?.accent_color,
@@ -181,6 +220,8 @@ export function ImageCardsBlock({
       data-image-card-style={style}
       data-color-role={accentRole}
       data-animation={animation}
+      data-image-fit={imageFit}
+      data-image-placement={imagePlacement}
       style={gridStyle}
     >
       {cards.map((card, index) => {

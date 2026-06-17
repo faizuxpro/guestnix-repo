@@ -122,6 +122,11 @@ type TextStackItem = {
   description: string;
 };
 
+type TextStackConfig = {
+  iconSize: number;
+  iconContainerSize: number;
+};
+
 type TextContact = {
   icon: string;
   label: string;
@@ -165,6 +170,7 @@ type TextFactsConfig = {
   iconSize: number;
   accentRole: CalloutColorRole;
   accentColor: string;
+  mobileColumns: 1 | 2;
 };
 
 type CalloutCardStyle =
@@ -604,6 +610,28 @@ function coerceDecorIconSize(value: unknown): number {
   return Math.min(2, Math.max(0.7, numeric));
 }
 
+function coerceStackIconContainerSize(value: unknown): number {
+  const numeric =
+    typeof value === "number"
+      ? value
+      : typeof value === "string"
+      ? Number(value)
+      : Number.NaN;
+  if (!Number.isFinite(numeric)) return 1;
+  return Math.min(2.5, Math.max(0.65, numeric));
+}
+
+function readStackConfig(content: Record<string, unknown>): TextStackConfig {
+  const raw =
+    typeof content.items_config === "object" && content.items_config !== null
+      ? (content.items_config as Record<string, unknown>)
+      : {};
+  return {
+    iconSize: coerceDecorIconSize(raw.icon_size),
+    iconContainerSize: coerceStackIconContainerSize(raw.icon_container_size),
+  };
+}
+
 function coerceContactRowsStyle(value: unknown): ContactRowsStyle {
   if (CONTACT_ROW_STYLE_VALUES.includes(value as ContactRowsStyle)) {
     return value as ContactRowsStyle;
@@ -675,6 +703,10 @@ function coerceFactsIconSize(value: unknown): number {
   return Math.min(2, Math.max(0.7, numeric));
 }
 
+function coerceFactsMobileColumns(value: unknown): 1 | 2 {
+  return value === 2 || value === "2" ? 2 : 1;
+}
+
 function readFactsConfig(content: Record<string, unknown>): TextFactsConfig {
   const raw =
     typeof content.facts_config === "object" && content.facts_config !== null
@@ -684,6 +716,7 @@ function readFactsConfig(content: Record<string, unknown>): TextFactsConfig {
     iconSize: coerceFactsIconSize(raw.icon_size),
     accentRole: coerceCalloutColorRole(raw.accent_role, "secondary"),
     accentColor: normalizeHexColor(raw.accent_color),
+    mobileColumns: coerceFactsMobileColumns(raw.mobile_columns),
   };
 }
 
@@ -1619,6 +1652,7 @@ export function TextBlockEditor({ block, onChange }: Props) {
   const factsStyle = coerceFactsGridStyle(block.content.facts_style);
   const factsConfig = readFactsConfig(block.content);
   const items = readItems(block.content);
+  const stackConfig = readStackConfig(block.content);
   const contacts = readContacts(block.content);
   const contactConfig = readContactConfig(block.content);
   const alert = readAlert(block.content);
@@ -1661,6 +1695,7 @@ export function TextBlockEditor({ block, onChange }: Props) {
     factsStyle?: FactsGridStyle;
     factsConfig?: TextFactsConfig;
     items?: TextStackItem[];
+    stackConfig?: TextStackConfig;
     contacts?: TextContact[];
     contactConfig?: TextContactConfig;
     alert?: TextAlert;
@@ -1670,6 +1705,7 @@ export function TextBlockEditor({ block, onChange }: Props) {
     callout?: TextCallout;
   }) => {
     const nextFactsConfig = next.factsConfig ?? factsConfig;
+    const nextStackConfig = next.stackConfig ?? stackConfig;
     const nextContactConfig = next.contactConfig ?? contactConfig;
     const nextAlertConfig = next.alertConfig ?? alertConfig;
     const nextChecklistConfig = next.checklistConfig ?? checklistConfig;
@@ -1688,8 +1724,13 @@ export function TextBlockEditor({ block, onChange }: Props) {
         icon_size: nextFactsConfig.iconSize,
         accent_role: nextFactsConfig.accentRole,
         accent_color: nextFactsConfig.accentColor || undefined,
+        mobile_columns: nextFactsConfig.mobileColumns,
       },
       items: next.items ?? items,
+      items_config: {
+        icon_size: nextStackConfig.iconSize,
+        icon_container_size: nextStackConfig.iconContainerSize,
+      },
       contacts: next.contacts ?? contacts,
       contacts_style: nextContactConfig.style,
       contacts_config: {
@@ -2685,6 +2726,29 @@ export function TextBlockEditor({ block, onChange }: Props) {
             </Select>
           </div>
 
+          <div className="grid gap-1.5">
+            <Label>Small Screen Columns</Label>
+            <Select
+              value={String(factsConfig.mobileColumns)}
+              onValueChange={(value) =>
+                patch({
+                  factsConfig: {
+                    ...factsConfig,
+                    mobileColumns: coerceFactsMobileColumns(value),
+                  },
+                })
+              }
+            >
+              <SelectTrigger className="w-full">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="1">1 column</SelectItem>
+                <SelectItem value="2">2 columns</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
           <div className="grid gap-2">
             <BlockColorControls
               label="Element Color"
@@ -2974,6 +3038,41 @@ export function TextBlockEditor({ block, onChange }: Props) {
 
       {variant === "stack" ? (
         <div className="editor-section">
+          <div className="grid gap-3 sm:grid-cols-2">
+            <PremiumSlider
+              label="Icon size"
+              value={stackConfig.iconSize}
+              min={0.7}
+              max={2}
+              step={0.05}
+              format={(value) => `${Math.round(value * 100)}%`}
+              onChange={(value) =>
+                patch({
+                  stackConfig: {
+                    ...stackConfig,
+                    iconSize: coerceDecorIconSize(value),
+                  },
+                })
+              }
+            />
+            <PremiumSlider
+              label="Icon background size"
+              value={stackConfig.iconContainerSize}
+              min={0.65}
+              max={2.5}
+              step={0.05}
+              format={(value) => `${Math.round(value * 100)}%`}
+              onChange={(value) =>
+                patch({
+                  stackConfig: {
+                    ...stackConfig,
+                    iconContainerSize: coerceStackIconContainerSize(value),
+                  },
+                })
+              }
+            />
+          </div>
+
           <div className="editor-section-header">
             <Label>Items</Label>
             <Button

@@ -439,6 +439,9 @@ function serializeBlock(block: Block): string | null {
     case "emergency_contacts": {
       const country = str(c.country).toUpperCase();
       const entry = country ? getCountryEntry(country) : undefined;
+      const customServices = Array.isArray(c.custom_services)
+        ? (c.custom_services as Array<Record<string, unknown>>)
+        : [];
       const custom = Array.isArray(c.custom_contacts)
         ? (c.custom_contacts as Array<Record<string, unknown>>)
         : [];
@@ -450,6 +453,11 @@ function serializeBlock(block: Block): string | null {
         }
       } else if (country) {
         parts.push(`Emergency country: ${country}`);
+      }
+      for (const service of customServices) {
+        const label = str(service.label);
+        const phone = str(service.phone);
+        if (label || phone) parts.push(`- ${label || "Emergency service"}: ${phone}`);
       }
       for (const contact of custom) {
         const label = str(contact.label);

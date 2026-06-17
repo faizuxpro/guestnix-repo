@@ -17,6 +17,11 @@ type IconGridItem = {
   description: string;
 };
 
+type IconGridBlockStyle = CSSProperties & {
+  "--sl-icon-grid-icon-scale"?: number;
+  "--sl-icon-grid-icon-container-scale"?: number;
+};
+
 const ICON_GRID_STYLES: IconGridStyle[] = [
   "classic",
   "numbered_minimal",
@@ -78,6 +83,16 @@ function readIconGridAnimation(value: unknown): IconGridAnimation {
     : "style_default";
 }
 
+function readNumber(
+  value: unknown,
+  fallback: number,
+  min: number,
+  max: number
+) {
+  if (typeof value !== "number" || !Number.isFinite(value)) return fallback;
+  return Math.min(max, Math.max(min, value));
+}
+
 export function IconGridBlock({ content }: { content: Partial<IconGridContent> }) {
   const items = readItems(content);
   if (items.length === 0) return null;
@@ -88,6 +103,25 @@ export function IconGridBlock({ content }: { content: Partial<IconGridContent> }
       : undefined;
   const accentRole = readIconGridColorRole(config?.accent_role, "primary");
   const animation = readIconGridAnimation(config?.animation);
+  const iconSize = readNumber(config?.icon_size, 100, 60, 180);
+  const iconContainerSize = readNumber(
+    config?.icon_container_size,
+    100,
+    70,
+    180
+  );
+  const blockStyle: IconGridBlockStyle = {
+    "--sl-icon-grid-icon-scale": iconSize / 100,
+    "--sl-icon-grid-icon-container-scale": iconContainerSize / 100,
+    ...blockColorOverrideVars([
+      {
+        value: config?.accent_color,
+        colorVar: "--sl-icon-grid-color",
+        rgbVar: "--sl-icon-grid-color-rgb",
+        contrastVar: "--sl-icon-grid-contrast",
+      },
+    ]),
+  };
 
   return (
     <div
@@ -95,16 +129,7 @@ export function IconGridBlock({ content }: { content: Partial<IconGridContent> }
       data-icon-grid-style={style}
       data-color-role={accentRole}
       data-animation={animation}
-      style={
-        blockColorOverrideVars([
-          {
-            value: config?.accent_color,
-            colorVar: "--sl-icon-grid-color",
-            rgbVar: "--sl-icon-grid-color-rgb",
-            contrastVar: "--sl-icon-grid-contrast",
-          },
-        ]) as CSSProperties
-      }
+      style={blockStyle}
     >
       {items.map((item, index) => (
         <article

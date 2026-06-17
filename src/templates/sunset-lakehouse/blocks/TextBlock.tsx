@@ -25,6 +25,11 @@ type TextStackItem = {
   description: string;
 };
 
+type TextStackConfig = {
+  iconSize: number;
+  iconContainerSize: number;
+};
+
 type TextContact = {
   icon: string;
   label: string;
@@ -68,6 +73,7 @@ type TextFactsConfig = {
   iconSize: number;
   accentRole: CalloutColorRole;
   accentColor: string;
+  mobileColumns: 1 | 2;
 };
 
 type CalloutCardStyle =
@@ -533,6 +539,28 @@ function readDecorIconSize(value: unknown): number {
   return Math.min(2, Math.max(0.7, numeric));
 }
 
+function readStackIconContainerSize(value: unknown): number {
+  const numeric =
+    typeof value === "number"
+      ? value
+      : typeof value === "string"
+      ? Number(value)
+      : Number.NaN;
+  if (!Number.isFinite(numeric)) return 1;
+  return Math.min(2.5, Math.max(0.65, numeric));
+}
+
+function readStackConfig(content: Partial<TextContent>): TextStackConfig {
+  const raw =
+    typeof content.items_config === "object" && content.items_config !== null
+      ? (content.items_config as Record<string, unknown>)
+      : {};
+  return {
+    iconSize: readDecorIconSize(raw.icon_size),
+    iconContainerSize: readStackIconContainerSize(raw.icon_container_size),
+  };
+}
+
 function readContactRowsStyle(value: unknown): ContactRowsStyle {
   if (CONTACT_ROW_STYLES.includes(value as ContactRowsStyle)) {
     return value as ContactRowsStyle;
@@ -585,6 +613,10 @@ function readFactsIconSize(value: unknown): number {
   return Math.min(2, Math.max(0.7, numeric));
 }
 
+function readFactsMobileColumns(value: unknown): 1 | 2 {
+  return value === 2 || value === "2" ? 2 : 1;
+}
+
 function readFactsConfig(content: Partial<TextContent>): TextFactsConfig {
   const raw =
     typeof content.facts_config === "object" && content.facts_config !== null
@@ -594,6 +626,7 @@ function readFactsConfig(content: Partial<TextContent>): TextFactsConfig {
     iconSize: readFactsIconSize(raw.icon_size),
     accentRole: readCalloutColorRole(raw.accent_role, "secondary"),
     accentColor: normalizeHexColor(raw.accent_color),
+    mobileColumns: readFactsMobileColumns(raw.mobile_columns),
   };
 }
 
@@ -1097,6 +1130,7 @@ export function TextBlock({
         className="sl-checkin-grid"
         data-facts-style={factsStyle}
         data-color-role={factsConfig.accentRole}
+        data-mobile-columns={factsConfig.mobileColumns}
         style={
           {
             "--sl-fact-icon-scale": factsConfig.iconSize,
@@ -1124,9 +1158,18 @@ export function TextBlock({
 
   if (variant === "stack") {
     const items = readItems(content);
+    const stackConfig = readStackConfig(content);
     if (items.length === 0) return null;
     return (
-      <div className="sl-stack">
+      <div
+        className="sl-stack"
+        style={
+          {
+            "--sl-stack-icon-scale": stackConfig.iconSize,
+            "--sl-stack-icon-container-scale": stackConfig.iconContainerSize,
+          } as CSSProperties
+        }
+      >
         {items.map((item, index) => (
           <div key={`stack-${index}-${item.title}`} className="sl-stack-item">
             <span className="ic">

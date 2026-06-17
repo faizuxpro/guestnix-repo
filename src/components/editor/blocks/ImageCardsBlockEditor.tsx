@@ -17,12 +17,14 @@ import {
 } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { AssetsHubPickerButton } from "@/components/editor/assets/AssetsHubPickerButton";
+import { PremiumSlider } from "@/components/editor/featured/controls/PremiumSlider";
 import { normalizeHexColor } from "@/lib/block-colors";
 import type { EditorBlock } from "@/stores/editor-store";
 import type {
   ImageCardsAnimation,
   ImageCardsColorRole,
   ImageCardsImageFit,
+  ImageCardsImagePlacement,
   ImageCardsImagePosition,
   ImageCardsStyle,
 } from "@/types/blocks";
@@ -51,6 +53,10 @@ type ImageCardsConfig = {
   animation: ImageCardsAnimation;
   imageFit: ImageCardsImageFit;
   imagePosition: ImageCardsImagePosition;
+  imagePlacement: ImageCardsImagePlacement;
+  imageShare: number;
+  titleSize: number;
+  descriptionSize: number;
 };
 
 const IMAGE_CARD_STYLES: Array<{ value: ImageCardsStyle; label: string }> = [
@@ -101,6 +107,7 @@ const IMAGE_CARD_ANIMATION_VALUES = IMAGE_CARD_ANIMATIONS.map(
 const IMAGE_CARD_FITS: Array<{ value: ImageCardsImageFit; label: string }> = [
   { value: "cover", label: "Cover" },
   { value: "contain", label: "Contain" },
+  { value: "natural", label: "Fit image size" },
 ];
 
 const IMAGE_CARD_FIT_VALUES = IMAGE_CARD_FITS.map((fit) => fit.value);
@@ -119,6 +126,26 @@ const IMAGE_CARD_POSITIONS: Array<{
 const IMAGE_CARD_POSITION_VALUES = IMAGE_CARD_POSITIONS.map(
   (position) => position.value
 );
+
+const IMAGE_CARD_PLACEMENTS: Array<{
+  value: ImageCardsImagePlacement;
+  label: string;
+}> = [
+  { value: "style_default", label: "Style default" },
+  { value: "top", label: "Top" },
+  { value: "bottom", label: "Bottom" },
+  { value: "left", label: "Left" },
+  { value: "right", label: "Right" },
+];
+
+const IMAGE_CARD_PLACEMENT_VALUES = IMAGE_CARD_PLACEMENTS.map(
+  (placement) => placement.value
+);
+
+function clampNumber(value: unknown, fallback: number, min: number, max: number) {
+  if (typeof value !== "number" || !Number.isFinite(value)) return fallback;
+  return Math.min(max, Math.max(min, value));
+}
 
 function readCards(content: Record<string, unknown>): ImageCard[] {
   const value = content.cards;
@@ -181,6 +208,13 @@ function coerceImageCardsPosition(value: unknown): ImageCardsImagePosition {
   return "center";
 }
 
+function coerceImageCardsPlacement(value: unknown): ImageCardsImagePlacement {
+  if (IMAGE_CARD_PLACEMENT_VALUES.includes(value as ImageCardsImagePlacement)) {
+    return value as ImageCardsImagePlacement;
+  }
+  return "style_default";
+}
+
 function readConfig(content: Record<string, unknown>): ImageCardsConfig {
   const raw =
     typeof content.config === "object" && content.config !== null
@@ -193,6 +227,10 @@ function readConfig(content: Record<string, unknown>): ImageCardsConfig {
     animation: coerceImageCardsAnimation(raw.animation),
     imageFit: coerceImageCardsFit(raw.image_fit),
     imagePosition: coerceImageCardsPosition(raw.image_position),
+    imagePlacement: coerceImageCardsPlacement(raw.image_placement),
+    imageShare: clampNumber(raw.image_share, 42, 25, 75),
+    titleSize: clampNumber(raw.title_size, 100, 70, 160),
+    descriptionSize: clampNumber(raw.description_size, 100, 70, 150),
   };
 }
 
@@ -219,6 +257,10 @@ export function ImageCardsBlockEditor({ block, onChange }: Props) {
         animation: merged.animation,
         image_fit: merged.imageFit,
         image_position: merged.imagePosition,
+        image_placement: merged.imagePlacement,
+        image_share: merged.imageShare,
+        title_size: merged.titleSize,
+        description_size: merged.descriptionSize,
       },
     });
   };
@@ -365,6 +407,64 @@ export function ImageCardsBlockEditor({ block, onChange }: Props) {
         </div>
       </div>
 
+      <div className="grid gap-2 sm:grid-cols-2">
+        <div className="grid gap-1.5">
+          <Label>Image placement</Label>
+          <Select
+            value={config.imagePlacement}
+            onValueChange={(value) =>
+              patchConfig({
+                imagePlacement: coerceImageCardsPlacement(value),
+              })
+            }
+          >
+            <SelectTrigger className="w-full">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {IMAGE_CARD_PLACEMENTS.map((option) => (
+                <SelectItem key={option.value} value={option.value}>
+                  {option.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+
+        {config.imagePlacement !== "style_default" ? (
+          <PremiumSlider
+            label="Image share"
+            value={config.imageShare}
+            min={25}
+            max={75}
+            step={5}
+            format={(value) => `${value}%`}
+            onChange={(imageShare) => patchConfig({ imageShare })}
+          />
+        ) : null}
+      </div>
+
+      <div className="grid gap-3 sm:grid-cols-2">
+        <PremiumSlider
+          label="Title size"
+          value={config.titleSize}
+          min={70}
+          max={160}
+          step={5}
+          format={(value) => `${value}%`}
+          onChange={(titleSize) => patchConfig({ titleSize })}
+        />
+        <PremiumSlider
+          label="Description size"
+          value={config.descriptionSize}
+          min={70}
+          max={150}
+          step={5}
+          format={(value) => `${value}%`}
+          onChange={(descriptionSize) => patchConfig({ descriptionSize })}
+        />
+      </div>
+
       <div className="editor-section-header">
         <Label>Cards</Label>
         <Button
@@ -444,7 +544,7 @@ export function ImageCardsBlockEditor({ block, onChange }: Props) {
                     src={card.image_url}
                     alt={card.alt || "Image card preview"}
                     className={`h-36 w-full ${
-                      config.imageFit === "contain"
+                      config.imageFit === "contain" || config.imageFit === "natural"
                         ? "bg-muted object-contain"
                         : "object-cover"
                     }`}

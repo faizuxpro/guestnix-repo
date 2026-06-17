@@ -13,6 +13,9 @@ type Tile = {
   tone: string;
 };
 
+type CustomService =
+  NonNullable<EmergencyContactsContent["custom_services"]>[number];
+
 function buildOfficialTiles(numbers: EmergencyNumbers): Tile[] {
   const tiles: Tile[] = [];
   if (numbers.generic) {
@@ -54,17 +57,49 @@ function buildOfficialTiles(numbers: EmergencyNumbers): Tile[] {
   return tiles;
 }
 
+function buildCustomTile(service: CustomService, index: number): Tile | null {
+  const label = service.label?.trim();
+  const number = service.phone?.trim();
+  if (!label && !number) return null;
+
+  return {
+    key: `custom-${index}`,
+    label: label || "Emergency",
+    number: number || "",
+    icon: service.icon ? (
+      <HostIcon value={service.icon} className="h-5 w-5" />
+    ) : (
+      <Phone className="h-5 w-5" />
+    ),
+    tone: "#0f766e",
+  };
+}
+
+function getTelHref(number: string) {
+  const compact = number.replace(/[^\d+]/g, "");
+  return compact ? `tel:${compact}` : undefined;
+}
+
 export function EmergencyContactsBlock({
   content,
 }: {
   content: Partial<EmergencyContactsContent>;
 }) {
-  const country = (content.country ?? "US").toUpperCase();
+  const country =
+    typeof content.country === "string" ? content.country.toUpperCase() : "US";
   const entry = getCountryEntry(country);
-  const tiles = entry ? buildOfficialTiles(entry.numbers) : [];
+  const customServices = Array.isArray(content.custom_services)
+    ? content.custom_services
+    : [];
   const custom = Array.isArray(content.custom_contacts)
     ? content.custom_contacts
     : [];
+  const tiles = [
+    ...(entry ? buildOfficialTiles(entry.numbers) : []),
+    ...customServices
+      .map((service, index) => buildCustomTile(service, index))
+      .filter((tile): tile is Tile => tile !== null),
+  ];
 
   if (tiles.length === 0 && custom.length === 0) return null;
 
@@ -81,7 +116,7 @@ export function EmergencyContactsBlock({
           {tiles.map((t) => (
             <a
               key={t.key}
-              href={`tel:${t.number.replace(/\s/g, "")}`}
+              href={getTelHref(t.number)}
               className="flex flex-col items-center gap-1.5 rounded-xl border bg-white p-3 text-center transition-all hover:-translate-y-[1px] hover:shadow-sm"
             >
               <span
@@ -107,7 +142,7 @@ export function EmergencyContactsBlock({
           {custom.map((c, i) => (
             <a
               key={i}
-              href={`tel:${(c.phone ?? "").replace(/\s/g, "")}`}
+              href={getTelHref(c.phone ?? "")}
               className="flex items-center gap-3 rounded-xl border bg-white p-3 transition-all hover:bg-neutral-50"
             >
               <span

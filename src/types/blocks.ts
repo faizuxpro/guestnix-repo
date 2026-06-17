@@ -122,6 +122,8 @@ export type FactsGridStyle =
   | "split_ticket"
   | "origami_fold";
 
+export type FactsGridMobileColumns = 1 | 2;
+
 export interface TextContent {
   html?: string;
   variant?:
@@ -147,12 +149,17 @@ export interface TextContent {
     icon_size?: number;
     accent_role?: CalloutColorRole;
     accent_color?: string;
+    mobile_columns?: FactsGridMobileColumns;
   };
   items?: Array<{
     icon?: string;
     title: string;
     description?: string;
   }>;
+  items_config?: {
+    icon_size?: number;
+    icon_container_size?: number;
+  };
   contacts?: Array<{
     icon?: string;
     label: string;
@@ -430,6 +437,8 @@ export interface IconGridContent {
     accent_role?: IconGridColorRole;
     accent_color?: string;
     animation?: IconGridAnimation;
+    icon_size?: number;
+    icon_container_size?: number;
   };
   items: Array<{
     icon?: string;
@@ -446,6 +455,10 @@ export interface ImageCardsContent {
     animation?: ImageCardsAnimation;
     image_fit?: ImageCardsImageFit;
     image_position?: ImageCardsImagePosition;
+    image_placement?: ImageCardsImagePlacement;
+    image_share?: number;
+    title_size?: number;
+    description_size?: number;
   };
   cards: Array<{
     image_url: string;
@@ -472,10 +485,17 @@ export type ImageCardsStyle =
 
 export type ImageCardsColorRole = "primary" | "secondary" | "accent";
 
-export type ImageCardsImageFit = "cover" | "contain";
+export type ImageCardsImageFit = "cover" | "contain" | "natural";
 
 export type ImageCardsImagePosition =
   | "center"
+  | "top"
+  | "bottom"
+  | "left"
+  | "right";
+
+export type ImageCardsImagePlacement =
+  | "style_default"
   | "top"
   | "bottom"
   | "left"
@@ -766,6 +786,11 @@ export interface CurrencyContent {
 
 export interface EmergencyContactsContent {
   country: string; // ISO 3166-1 alpha-2, e.g. "US"
+  custom_services?: Array<{
+    icon?: string;
+    label: string;
+    phone: string;
+  }>;
   custom_contacts: Array<{
     icon?: string;
     label: string;

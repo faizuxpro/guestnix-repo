@@ -659,18 +659,22 @@ function normalizeBlock(block: SnapshotBlock): PrintBlock | null {
         text: asString(content.instructions) || undefined,
       });
     case "emergency_contacts": {
-      const fields = Array.isArray(content.custom_contacts)
-        ? content.custom_contacts
-            .map((contact) => {
-              const row = asRecord(contact);
-            return {
-              label: asString(row.label),
-              value: asString(row.phone),
-              icon: asString(row.icon) || undefined,
-            };
-            })
-            .filter((field) => field.label || field.value)
+      const customServices = Array.isArray(content.custom_services)
+        ? content.custom_services
         : [];
+      const customContacts = Array.isArray(content.custom_contacts)
+        ? content.custom_contacts
+        : [];
+      const fields = [...customServices, ...customContacts]
+        .map((contact) => {
+          const row = asRecord(contact);
+          return {
+            label: asString(row.label),
+            value: asString(row.phone),
+            icon: asString(row.icon) || undefined,
+          };
+        })
+        .filter((field) => field.label || field.value);
       return fields.length > 0
         ? makeBlock(block, "contacts", {
             title: "Emergency contacts",

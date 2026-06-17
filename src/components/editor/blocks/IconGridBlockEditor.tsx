@@ -11,6 +11,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { PremiumSlider } from "@/components/editor/featured/controls/PremiumSlider";
 import { normalizeHexColor } from "@/lib/block-colors";
 import type { EditorBlock } from "@/stores/editor-store";
 import type {
@@ -36,6 +37,8 @@ type IconGridConfig = {
   accentRole: IconGridColorRole;
   accentColor: string;
   animation: IconGridAnimation;
+  iconSize: number;
+  iconContainerSize: number;
 };
 
 const ICON_GRID_STYLES: Array<{ value: IconGridStyle; label: string }> = [
@@ -122,6 +125,11 @@ function coerceIconGridAnimation(value: unknown): IconGridAnimation {
   return "style_default";
 }
 
+function clampNumber(value: unknown, fallback: number, min: number, max: number) {
+  if (typeof value !== "number" || !Number.isFinite(value)) return fallback;
+  return Math.min(max, Math.max(min, value));
+}
+
 function readConfig(content: Record<string, unknown>): IconGridConfig {
   const raw =
     typeof content.config === "object" && content.config !== null
@@ -131,6 +139,8 @@ function readConfig(content: Record<string, unknown>): IconGridConfig {
     accentRole: coerceIconGridColorRole(raw.accent_role, "primary"),
     accentColor: normalizeHexColor(raw.accent_color),
     animation: coerceIconGridAnimation(raw.animation),
+    iconSize: clampNumber(raw.icon_size, 100, 60, 180),
+    iconContainerSize: clampNumber(raw.icon_container_size, 100, 70, 180),
   };
 }
 
@@ -152,6 +162,8 @@ export function IconGridBlockEditor({ block, onChange }: Props) {
         accent_role: merged.accentRole,
         accent_color: merged.accentColor || undefined,
         animation: merged.animation,
+        icon_size: merged.iconSize,
+        icon_container_size: merged.iconContainerSize,
       },
     });
   };
@@ -220,6 +232,27 @@ export function IconGridBlockEditor({ block, onChange }: Props) {
             ))}
           </SelectContent>
         </Select>
+      </div>
+
+      <div className="grid gap-3 sm:grid-cols-2">
+        <PremiumSlider
+          label="Icon size"
+          value={config.iconSize}
+          min={60}
+          max={180}
+          step={5}
+          format={(value) => `${value}%`}
+          onChange={(iconSize) => patchConfig({ iconSize })}
+        />
+        <PremiumSlider
+          label="Icon background size"
+          value={config.iconContainerSize}
+          min={70}
+          max={180}
+          step={5}
+          format={(value) => `${value}%`}
+          onChange={(iconContainerSize) => patchConfig({ iconContainerSize })}
+        />
       </div>
 
       <div className="editor-section-header">
