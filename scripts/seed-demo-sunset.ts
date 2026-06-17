@@ -80,6 +80,7 @@ async function seedSectionsForGuidebook(
         title: s.title,
         icon: s.icon,
         orderIndex: i,
+        isVisible: s.isVisible ?? true,
       })
       .returning();
     createdSectionIds.push(createdSection.id);
@@ -92,6 +93,7 @@ async function seedSectionsForGuidebook(
         type: b.type,
         content: b.content,
         orderIndex: j,
+        isVisible: b.isVisible ?? true,
       });
     }
   }
@@ -129,6 +131,7 @@ async function seed() {
         publishedAt: existing.publishedAt ?? new Date(),
         branding: sunsetLakehouseSeed.branding,
         bottomNav: sunsetLakehouseSeed.bottomNav,
+        heroData: sunsetLakehouseSeed.heroData,
       })
       .where(eq(guidebooks.id, existing.id));
 
@@ -154,6 +157,7 @@ async function seed() {
       publishedAt: new Date(),
       branding: sunsetLakehouseSeed.branding,
       bottomNav: sunsetLakehouseSeed.bottomNav,
+      heroData: sunsetLakehouseSeed.heroData,
     })
     .returning();
 

@@ -199,15 +199,17 @@ export async function POST(request: Request) {
       propertyCountry = property?.country ?? null;
     }
 
-    const heroData = buildSeedHeroData({
-      guidebookTitle: parsed.data.title,
-      hostName: profile?.fullName ?? null,
-      hostEmail: profile?.email ?? null,
-      propertyAddress,
-      propertyCity,
-      propertyState,
-      propertyCountry,
-    });
+    const heroData =
+      seed.heroData ??
+      buildSeedHeroData({
+        guidebookTitle: parsed.data.title,
+        hostName: profile?.fullName ?? null,
+        hostEmail: profile?.email ?? null,
+        propertyAddress,
+        propertyCity,
+        propertyState,
+        propertyCountry,
+      });
 
     const [guidebook] = await db
       .insert(guidebooks)
@@ -240,6 +242,7 @@ export async function POST(request: Request) {
           title: s.title,
           icon: s.icon,
           orderIndex: i,
+          isVisible: s.isVisible ?? true,
         })
         .returning();
       createdSectionIds.push(createdSection.id);
@@ -252,6 +255,7 @@ export async function POST(request: Request) {
           type: b.type,
           content: b.content,
           orderIndex: j,
+          isVisible: b.isVisible ?? true,
         });
       }
     }
