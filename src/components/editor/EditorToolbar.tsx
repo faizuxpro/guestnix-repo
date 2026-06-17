@@ -259,6 +259,13 @@ export function EditorToolbar({
     setQuickVariablesRefreshSignal((value) => value + 1);
   }
 
+  function openMobilePreviewDevice(device: PreviewDevice) {
+    onPreviewDeviceChange(device);
+    if (!previewOpen) {
+      onTogglePreview();
+    }
+  }
+
   return (
     <header className="h-14 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80">
       <div className="relative flex h-full items-center gap-2 px-2 md:px-3">
@@ -424,21 +431,21 @@ export function EditorToolbar({
               </DropdownMenuItem>
               <DropdownMenuSeparator className="md:hidden" />
               <DropdownMenuItem
-                onClick={() => onPreviewDeviceChange("mobile")}
+                onClick={() => openMobilePreviewDevice("mobile")}
                 className="md:hidden"
               >
                 <Smartphone className="h-3.5 w-3.5" />
                 Mobile preview
               </DropdownMenuItem>
               <DropdownMenuItem
-                onClick={() => onPreviewDeviceChange("tablet")}
+                onClick={() => openMobilePreviewDevice("tablet")}
                 className="md:hidden"
               >
                 <Tablet className="h-3.5 w-3.5" />
                 Tablet preview
               </DropdownMenuItem>
               <DropdownMenuItem
-                onClick={() => onPreviewDeviceChange("desktop")}
+                onClick={() => openMobilePreviewDevice("desktop")}
                 className="md:hidden"
               >
                 <Monitor className="h-3.5 w-3.5" />

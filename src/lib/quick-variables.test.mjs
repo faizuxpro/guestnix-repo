@@ -60,12 +60,12 @@ test("guest name uses browser identity when provided", () => {
   const payload = buildQuickVariableRenderPayload({
     quickVariables: settings,
     mode: "draft",
-    guestName: "Amina",
+    guestName: "Jane",
   });
 
   assert.equal(
     resolveQuickVariablesInString("Welcome {{guest_name}}", payload),
-    "Welcome Amina"
+    "Welcome Jane"
   );
 });
 

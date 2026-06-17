@@ -119,7 +119,7 @@ export const QUICK_VARIABLE_PRESETS: QuickVariablePreset[] = [
     label: "Host name",
     type: "text",
     sensitive: false,
-    placeholder: "Amina",
+    placeholder: "Jane",
   },
   {
     key: "host_phone",

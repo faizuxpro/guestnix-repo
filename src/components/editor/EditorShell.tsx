@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { Monitor } from "lucide-react";
 import { EditorProvider } from "./EditorProvider";
 import { EditorToolbar } from "./EditorToolbar";
 import { Sidepanel } from "./Sidepanel";
@@ -121,6 +122,12 @@ export function EditorShell({ initial }: Props) {
           previewDevice={device}
           onPreviewDeviceChange={handlePreviewDeviceChange}
         />
+        <div className="flex h-8 items-center justify-center gap-1.5 border-b border-amber-200 bg-amber-50 px-3 text-center text-[11px] font-medium text-amber-900 dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-100">
+          <Monitor className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
+          <span className="truncate">
+            For the best editing experience, work on desktop.
+          </span>
+        </div>
       </div>
 
       <div className="flex min-h-0 min-w-0 flex-1 overflow-hidden">
