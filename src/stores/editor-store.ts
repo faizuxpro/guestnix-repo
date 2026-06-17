@@ -35,6 +35,8 @@ export type EditorBlock = {
   isVisible: boolean;
 };
 
+export type CopiedBlock = Pick<EditorBlock, "type" | "content" | "isVisible">;
+
 export type EditorSection = {
   id: string;
   title: string;
@@ -103,6 +105,8 @@ type Snapshot = {
 };
 
 const HISTORY_CAP = 100;
+export const EDITOR_BLOCK_CLIPBOARD_STORAGE_KEY =
+  "guestnix.editor.blockClipboard.v1";
 
 type LoadInput = {
   guidebook: GuidebookMeta;
@@ -147,6 +151,7 @@ interface EditorState {
   bottomNav: BottomNavSlot[];
   activeSectionId: string | null;
   activeBlockId: string | null;
+  copiedBlock: CopiedBlock | null;
   activePreviewFocus: EditorPreviewFocus | null;
   activeFeaturedView: "home" | "host" | "nearby" | "store" | null;
   editorNavigationRequest: EditorNavigationRequest | null;
@@ -200,6 +205,10 @@ interface EditorState {
   reorderBlocks: (sectionId: string, orderedIds: string[]) => void;
   moveBlock: (blockId: string, toSectionId: string, toIndex: number) => void;
   duplicateBlock: (blockId: string) => void;
+  copyBlock: (blockId: string) => void;
+  pasteBlock: (sectionId: string, insertIndex: number) => string | null;
+  canPasteBlock: () => boolean;
+  hydrateCopiedBlock: () => void;
   setActiveBlock: (id: string | null) => void;
 
   updateGuidebookMeta: (patch: Partial<GuidebookMeta>) => void;
@@ -224,6 +233,69 @@ interface EditorState {
 
 function cloneSections(sections: EditorSection[]): EditorSection[] {
   return structuredClone(sections);
+}
+
+function cloneBlockContentForPaste(content: BlockContent): BlockContent {
+  const copy = structuredClone(content);
+  if (!Array.isArray(copy.children)) return copy;
+
+  copy.children = copy.children.map((child, index) => {
+    if (!child || typeof child !== "object") return child;
+    const row = child as Record<string, unknown>;
+    return {
+      ...row,
+      id: randomUUID(),
+      content:
+        typeof row.content === "object" && row.content !== null
+          ? cloneBlockContentForPaste(row.content as BlockContent)
+          : {},
+      orderIndex: index,
+    };
+  });
+
+  return copy;
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+function readCopiedBlockFromStorage(): CopiedBlock | null {
+  if (typeof window === "undefined") return null;
+  const raw = window.localStorage.getItem(EDITOR_BLOCK_CLIPBOARD_STORAGE_KEY);
+  if (!raw) return null;
+
+  try {
+    const parsed = JSON.parse(raw) as unknown;
+    if (!isRecord(parsed) || parsed.version !== 1 || !isRecord(parsed.block)) {
+      return null;
+    }
+
+    const block = parsed.block;
+    if (
+      typeof block.type !== "string" ||
+      !isRecord(block.content) ||
+      typeof block.isVisible !== "boolean"
+    ) {
+      return null;
+    }
+
+    return {
+      type: block.type,
+      content: block.content,
+      isVisible: block.isVisible,
+    };
+  } catch {
+    return null;
+  }
+}
+
+function writeCopiedBlockToStorage(block: CopiedBlock) {
+  if (typeof window === "undefined") return;
+  window.localStorage.setItem(
+    EDITOR_BLOCK_CLIPBOARD_STORAGE_KEY,
+    JSON.stringify({ version: 1, block })
+  );
 }
 
 function readDraftTouch(data: unknown) {
@@ -343,6 +415,7 @@ export const useEditorStore = create<EditorState>((set, get) => ({
   bottomNav: [],
   activeSectionId: null,
   activeBlockId: null,
+  copiedBlock: null,
   activePreviewFocus: null,
   activeFeaturedView: null,
   editorNavigationRequest: null,
@@ -398,6 +471,7 @@ export const useEditorStore = create<EditorState>((set, get) => ({
       bottomNav: parseStoredSlots(guidebook.bottomNav),
       activeSectionId: hydratedSections[0]?.id ?? null,
       activeBlockId: null,
+      copiedBlock: readCopiedBlockFromStorage(),
       activePreviewFocus: null,
       activeFeaturedView: null,
       editorNavigationRequest: null,
@@ -420,6 +494,7 @@ export const useEditorStore = create<EditorState>((set, get) => ({
       bottomNav: [],
       activeSectionId: null,
       activeBlockId: null,
+      copiedBlock: readCopiedBlockFromStorage(),
       activePreviewFocus: null,
       activeFeaturedView: null,
       editorNavigationRequest: null,
@@ -736,7 +811,7 @@ export const useEditorStore = create<EditorState>((set, get) => ({
         ...src,
         id: randomUUID(),
         orderIndex: src.orderIndex + 1,
-        content: structuredClone(src.content),
+        content: cloneBlockContentForPaste(src.content),
       };
       const blocks = [...s.blocks];
       blocks.splice(bIdx + 1, 0, copy);
@@ -749,6 +824,72 @@ export const useEditorStore = create<EditorState>((set, get) => ({
       sections: next,
       isDirty: true,
     });
+  },
+
+  copyBlock: (blockId) => {
+    const block = get()
+      .sections.flatMap((section) => section.blocks)
+      .find((item) => item.id === blockId);
+    if (!block) return;
+
+    set({
+      copiedBlock: {
+        type: block.type,
+        content: structuredClone(block.content),
+        isVisible: block.isVisible,
+      },
+    });
+    writeCopiedBlockToStorage({
+      type: block.type,
+      content: structuredClone(block.content),
+      isVisible: block.isVisible,
+    });
+  },
+
+  pasteBlock: (sectionId, insertIndex) => {
+    const state = get();
+    const copiedBlock = state.copiedBlock ?? readCopiedBlockFromStorage();
+    if (!copiedBlock) return null;
+
+    const idx = state.sections.findIndex((section) => section.id === sectionId);
+    if (idx === -1) return null;
+
+    const section = state.sections[idx];
+    const insertAt = Math.min(Math.max(0, insertIndex), section.blocks.length);
+    const blockId = randomUUID();
+    const nextBlock: EditorBlock = {
+      id: blockId,
+      type: copiedBlock.type,
+      content: cloneBlockContentForPaste(copiedBlock.content),
+      orderIndex: insertAt,
+      isVisible: copiedBlock.isVisible,
+    };
+
+    const blocks = [...section.blocks];
+    blocks.splice(insertAt, 0, nextBlock);
+    const next = [...state.sections];
+    next[idx] = {
+      ...section,
+      blocks: blocks.map((block, index) => ({ ...block, orderIndex: index })),
+    };
+
+    set({
+      ...pushHistory(state),
+      sections: next,
+      activeSectionId: sectionId,
+      activeBlockId: blockId,
+      activePreviewFocus: null,
+      isDirty: true,
+    });
+
+    return blockId;
+  },
+
+  canPasteBlock: () =>
+    get().copiedBlock !== null || readCopiedBlockFromStorage() !== null,
+
+  hydrateCopiedBlock: () => {
+    set({ copiedBlock: readCopiedBlockFromStorage() });
   },
 
   setActiveBlock: (id) => set({ activeBlockId: id, activePreviewFocus: null }),

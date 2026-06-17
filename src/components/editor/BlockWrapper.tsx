@@ -41,7 +41,9 @@ import {
   Video,
   Images,
   Info,
+  ClipboardPaste,
 } from "lucide-react";
+import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -206,6 +208,9 @@ export function BlockWrapper({
   const updateBlock = useEditorStore((s) => s.updateBlock);
   const deleteBlock = useEditorStore((s) => s.deleteBlock);
   const duplicateBlock = useEditorStore((s) => s.duplicateBlock);
+  const copyBlock = useEditorStore((s) => s.copyBlock);
+  const pasteBlock = useEditorStore((s) => s.pasteBlock);
+  const canPasteBlock = useEditorStore((s) => s.copiedBlock !== null);
   const reorderBlocks = useEditorStore((s) => s.reorderBlocks);
   const moveBlock = useEditorStore((s) => s.moveBlock);
   const setActiveSection = useEditorStore((s) => s.setActiveSection);
@@ -400,6 +405,28 @@ export function BlockWrapper({
                 </DropdownMenuItem>
               </DropdownMenuGroup>
               <DropdownMenuSeparator />
+              <DropdownMenuItem
+                onClick={(e) => {
+                  e.stopPropagation();
+                  copyBlock(block.id);
+                  toast.success("Block copied");
+                }}
+              >
+                <Copy className="h-3.5 w-3.5" />
+                Copy block
+              </DropdownMenuItem>
+              {canPasteBlock ? (
+                <DropdownMenuItem
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    const pastedId = pasteBlock(sectionId, index + 1);
+                    if (pastedId) toast.success("Block pasted");
+                  }}
+                >
+                  <ClipboardPaste className="h-3.5 w-3.5" />
+                  Paste below
+                </DropdownMenuItem>
+              ) : null}
               <DropdownMenuItem
                 onClick={(e) => {
                   e.stopPropagation();

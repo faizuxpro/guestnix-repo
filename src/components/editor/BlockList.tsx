@@ -8,9 +8,11 @@ import {
   verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import { LibraryBig, Plus } from "lucide-react";
+import { ClipboardPaste, LibraryBig, Plus } from "lucide-react";
+import { toast } from "sonner";
 import { apiFetch } from "@/lib/api-fetch";
 import { toastApiError } from "@/lib/toast-error";
+import { Button } from "@/components/ui/button";
 import {
   getAssetBlockContent,
   getAssetBlockType,
@@ -171,7 +173,9 @@ function InsertRow({
   useSheetPicker,
   onOpenChange,
   onAdd,
+  onPaste,
   creating,
+  canPaste,
   options,
 }: {
   sectionId: string;
@@ -181,7 +185,9 @@ function InsertRow({
   useSheetPicker: boolean;
   onOpenChange: (open: boolean) => void;
   onAdd: (index: number, option: BlockOption) => Promise<void>;
+  onPaste: (index: number) => void;
   creating: boolean;
+  canPaste: boolean;
   options: GroupedBlockOptions;
 }) {
   const { active } = useDndContext();
@@ -232,6 +238,20 @@ function InsertRow({
             align="center"
             sideOffset={6}
           >
+            {canPaste ? (
+              <div className="border-b border-border/70 p-1 pb-2">
+                <Button
+                  type="button"
+                  variant="secondary"
+                  size="sm"
+                  className="w-full justify-start"
+                  onClick={() => onPaste(index)}
+                >
+                  <ClipboardPaste className="h-3.5 w-3.5" />
+                  Paste copied block
+                </Button>
+              </div>
+            ) : null}
             <BlockPickerCommand
               options={options}
               creating={creating}
@@ -252,6 +272,8 @@ export function BlockList({ sectionId, onOpenSharedCoverSettings }: Props) {
   const addBlockLocal = useEditorStore((s) => s.addBlock);
   const deleteBlockLocal = useEditorStore((s) => s.deleteBlock);
   const moveBlock = useEditorStore((s) => s.moveBlock);
+  const pasteBlock = useEditorStore((s) => s.pasteBlock);
+  const canPasteBlock = useEditorStore((s) => s.copiedBlock !== null);
   const updateSection = useEditorStore((s) => s.updateSection);
   const guidebookSettings = useEditorStore((s) => s.guidebookSettings);
   const activeBlockId = useEditorStore((s) => s.activeBlockId);
@@ -407,6 +429,21 @@ export function BlockList({ sectionId, onOpenSharedCoverSettings }: Props) {
     }
   };
 
+  const pasteBlockAt = (insertIndex: number) => {
+    if (!section) return;
+    const blockId = pasteBlock(section.id, insertIndex);
+    if (!blockId) return;
+
+    setOpenInsertIndex(null);
+    showAddedPulse(blockId);
+    window.requestAnimationFrame(() => {
+      document
+        .querySelector<HTMLElement>(`[data-editor-block-id="${blockId}"]`)
+        ?.scrollIntoView({ block: "nearest", behavior: "smooth" });
+    });
+    toast.success("Block pasted");
+  };
+
   const closePicker = () => setOpenInsertIndex(null);
   const openPickerAt = (index: number) => setOpenInsertIndex(index);
   const selectedInsertIndex = openInsertIndex ?? 0;
@@ -434,7 +471,9 @@ export function BlockList({ sectionId, onOpenSharedCoverSettings }: Props) {
           useSheetPicker={useSheetPicker}
           onOpenChange={(next) => (next ? openPickerAt(0) : closePicker())}
           onAdd={createBlockAt}
+          onPaste={pasteBlockAt}
           creating={creating}
+          canPaste={canPasteBlock}
           options={groupedOptions}
         />
 
@@ -460,7 +499,9 @@ export function BlockList({ sectionId, onOpenSharedCoverSettings }: Props) {
                   next ? openPickerAt(insertIndex) : closePicker()
                 }
                 onAdd={createBlockAt}
+                onPaste={pasteBlockAt}
                 creating={creating}
+                canPaste={canPasteBlock}
                 options={groupedOptions}
               />
             </div>
@@ -486,6 +527,20 @@ export function BlockList({ sectionId, onOpenSharedCoverSettings }: Props) {
               </SheetDescription>
             </SheetHeader>
             <div className="min-h-0 overflow-y-auto p-2">
+              {canPasteBlock ? (
+                <div className="border-b border-border/70 p-1 pb-2">
+                  <Button
+                    type="button"
+                    variant="secondary"
+                    size="sm"
+                    className="w-full justify-start"
+                    onClick={() => pasteBlockAt(selectedInsertIndex)}
+                  >
+                    <ClipboardPaste className="h-3.5 w-3.5" />
+                    Paste copied block
+                  </Button>
+                </div>
+              ) : null}
               <BlockPickerCommand
                 options={groupedOptions}
                 creating={creating}

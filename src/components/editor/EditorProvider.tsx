@@ -3,6 +3,7 @@
 import { useEffect, useRef } from "react";
 import { toast } from "sonner";
 import {
+  EDITOR_BLOCK_CLIPBOARD_STORAGE_KEY,
   useEditorStore,
   type EditorSection,
   type GuidebookMeta,
@@ -35,6 +36,7 @@ export function EditorProvider({ initial, children }: Props) {
   const save = useEditorStore((s) => s.save);
   const undo = useEditorStore((s) => s.undo);
   const redo = useEditorStore((s) => s.redo);
+  const hydrateCopiedBlock = useEditorStore((s) => s.hydrateCopiedBlock);
   const isDirty = useEditorStore((s) => s.isDirty);
   const sections = useEditorStore((s) => s.sections);
   const guidebookSettings = useEditorStore((s) => s.guidebookSettings);
@@ -53,6 +55,19 @@ export function EditorProvider({ initial, children }: Props) {
     }
     loadGuidebook(initial);
   }, [initial, loadGuidebook]);
+
+  useEffect(() => {
+    hydrateCopiedBlock();
+
+    const handler = (event: StorageEvent) => {
+      if (event.key === EDITOR_BLOCK_CLIPBOARD_STORAGE_KEY) {
+        hydrateCopiedBlock();
+      }
+    };
+
+    window.addEventListener("storage", handler);
+    return () => window.removeEventListener("storage", handler);
+  }, [hydrateCopiedBlock]);
 
   useEffect(() => {
     if (!isDirty) return;
