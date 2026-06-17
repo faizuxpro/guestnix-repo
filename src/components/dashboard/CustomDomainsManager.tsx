@@ -348,6 +348,12 @@ export function CustomDomainsManager({ guidebookId, guidebookSlug }: Props) {
                       <p className="font-medium">
                         Add these DNS records at your domain registrar:
                       </p>
+                      <p className="text-[11px] text-muted-foreground">
+                        The Name / host value matches what most DNS dashboards
+                        ask for. For root domains, use <code>@</code> when
+                        your provider supports it; some providers label the
+                        same field as blank, root, or the full domain.
+                      </p>
                       {[
                         ...domain.dnsInstructions,
                         ...(domain.verificationTxt ? [domain.verificationTxt] : []),

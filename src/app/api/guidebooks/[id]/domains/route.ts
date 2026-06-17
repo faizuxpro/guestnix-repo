@@ -4,7 +4,7 @@ import { and, eq } from "drizzle-orm";
 import { createServerClient } from "@/lib/supabase/server";
 import { db } from "@/lib/db";
 import { customDomains, guidebooks } from "@/lib/db/schema";
-import { classifyHost } from "@/lib/domain-classify";
+import { classifyHost, dnsHostField } from "@/lib/domain-classify";
 import { getProvider } from "@/lib/custom-domain-provider";
 import { productEvents } from "@/lib/analytics/product";
 import { trackServerProductEvent } from "@/lib/analytics/posthog-server";
@@ -49,10 +49,10 @@ function serializeDomain(row: DomainRow) {
     verificationTxt: row.verificationToken
       ? {
           recordType: "TXT" as const,
-          name: `_guestnix-verify.${row.domain}`,
+          name: dnsHostField(row.domain, "_guestnix-verify"),
           value: row.verificationToken,
           description:
-            "Proves you control DNS for this domain (prevents domain hijacking).",
+            "Proves you control DNS for this domain. If your DNS provider asks for the full name, use the complete _guestnix-verify domain instead.",
         }
       : null,
   };

@@ -15,6 +15,25 @@ import psl from "psl";
 
 export type DomainKind = "apex" | "subdomain";
 
+export function dnsHostField(hostname: string, prefix?: string): string {
+  const trimmed = hostname.trim().toLowerCase().replace(/\.$/, "");
+  const parsed = psl.parse(trimmed);
+  const fullName = prefix ? `${prefix}.${trimmed}` : trimmed;
+
+  if (parsed.error || !parsed.domain) {
+    return fullName;
+  }
+
+  if (fullName === parsed.domain) {
+    return "@";
+  }
+
+  const suffix = `.${parsed.domain}`;
+  return fullName.endsWith(suffix)
+    ? fullName.slice(0, -suffix.length)
+    : fullName;
+}
+
 export function classifyHost(hostname: string):
   | { kind: DomainKind; host: string; registrableDomain: string }
   | { kind: null; error: string } {

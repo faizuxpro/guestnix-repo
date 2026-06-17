@@ -6,7 +6,7 @@
  * back to hosts as the CNAME/ALIAS target.
  */
 
-import type { DomainKind } from "@/lib/domain-classify";
+import { dnsHostField, type DomainKind } from "@/lib/domain-classify";
 import type {
   CustomDomainProvider,
   DnsInstruction,
@@ -186,7 +186,7 @@ export class HerokuProvider implements CustomDomainProvider {
       return [
         {
           recordType: kind === "apex" ? "ALIAS" : "CNAME",
-          name: host,
+          name: dnsHostField(host),
           value: "Pending Heroku DNS target",
           description:
             "Heroku has not returned a DNS target yet. Remove and re-add this domain after Heroku API access is configured.",
@@ -198,10 +198,10 @@ export class HerokuProvider implements CustomDomainProvider {
       return [
         {
           recordType: "ALIAS",
-          name: host,
+          name: dnsHostField(host),
           value: target,
           description:
-            "Point your root domain to Heroku using ALIAS, ANAME, or CNAME flattening if your DNS provider supports it.",
+            "Point your root domain to Heroku using ALIAS, ANAME, or CNAME flattening. Some DNS providers label this host as @, blank, or root.",
         },
       ];
     }
@@ -209,9 +209,10 @@ export class HerokuProvider implements CustomDomainProvider {
     return [
       {
         recordType: "CNAME",
-        name: host,
+        name: dnsHostField(host),
         value: target,
-        description: "Point this subdomain to your Guestnix Heroku app.",
+        description:
+          "Point this subdomain to your Guestnix Heroku app. If your DNS provider asks for the full name, use the complete domain instead.",
       },
     ];
   }
