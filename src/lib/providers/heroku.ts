@@ -92,6 +92,13 @@ function cnameFrom(providerData?: ProviderData): string | null {
   return typeof cname === "string" && cname.trim() ? normalizeHost(cname) : null;
 }
 
+function isAlreadyRegisteredError(status: number | undefined, message: string) {
+  return (
+    status === 422 &&
+    /already exists|already been taken|already in use|taken/i.test(message)
+  );
+}
+
 function mapStatus(domain: HerokuDomain): DomainStatus {
   const raw = (domain.acm_status ?? "").trim().toLowerCase();
   const reason = domain.acm_status_reason ?? undefined;
@@ -134,10 +141,14 @@ export class HerokuProvider implements CustomDomainProvider {
     } catch (err) {
       const status = (err as Error & { status?: number }).status;
       const message = err instanceof Error ? err.message : String(err);
-      if (status !== 422 && !/already exists|already been taken|taken/i.test(message)) {
+      if (!isAlreadyRegisteredError(status, message)) {
         throw err;
       }
-      domain = await this.getDomain(normalized);
+      try {
+        domain = await this.getDomain(normalized);
+      } catch {
+        throw err;
+      }
     }
 
     return {
