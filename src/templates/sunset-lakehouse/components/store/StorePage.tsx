@@ -376,9 +376,10 @@ export function StorePage({
       <>
       {visibleSavedRequests.length > 0 ? (
         <div className="sl-store-recent" aria-label="Recent Store requests">
-          <div>
-            <span>Recent requests</span>
-            <strong>{visibleSavedRequests[0].requestCode}</strong>
+          <div className="sl-store-recent-copy">
+            <span>Track requests</span>
+            <strong>Your Store request updates</strong>
+            <p>Open a thread to view host replies, payment steps, and delivery status.</p>
           </div>
           <div className="sl-store-recent-links">
             {visibleSavedRequests.map((request) => (

@@ -68,6 +68,7 @@ type PatchGuidebookResponse = {
 type Props = {
   guidebook: GuidebookSettingsModel;
   publicUrlBase: string;
+  customDomainUrl?: string | null;
   isPlatformAdmin?: boolean;
 };
 
@@ -183,6 +184,7 @@ function SectionShell({
 export function GuidebookSettingsPage({
   guidebook,
   publicUrlBase,
+  customDomainUrl = null,
   isPlatformAdmin: canManageDemoSettings = false,
 }: Props) {
   const router = useRouter();
@@ -229,7 +231,8 @@ export function GuidebookSettingsPage({
   const draftPublicUrlBase = `${publicUrlOrigin}${demoEnabled ? "/demo" : "/g"}`;
   const savedPublicUrl = `${savedPublicUrlBase}/${savedSlug}`;
   const draftPublicUrl = `${draftPublicUrlBase}/${slug || "..."}`;
-  const savedHostPreviewUrl = withHostPreviewParam(savedPublicUrl);
+  const primaryShareUrl = customDomainUrl ?? savedPublicUrl;
+  const savedHostPreviewUrl = withHostPreviewParam(primaryShareUrl);
   const printPreviewUrl = `/dashboard/guidebooks/${guidebook.id}/print`;
   const isPublished = status === "published";
   const hasUnpublishedChanges =
@@ -563,10 +566,12 @@ export function GuidebookSettingsPage({
 
   async function copyLink() {
     try {
-      await navigator.clipboard.writeText(savedPublicUrl);
+      await navigator.clipboard.writeText(primaryShareUrl);
       setCopied(true);
       window.setTimeout(() => setCopied(false), 1500);
-      toast.success("Guidebook link copied");
+      toast.success(
+        customDomainUrl ? "Custom domain link copied" : "Guidebook link copied"
+      );
     } catch {
       toast.error("Couldn't copy link");
     }
@@ -650,8 +655,22 @@ export function GuidebookSettingsPage({
                   <BookOpen className="h-3.5 w-3.5 shrink-0" />
                   <span className="truncate">{savedSlug || "no-slug"}</span>
                 </span>
-                <span className="break-all">{savedPublicUrl}</span>
+                <span className="break-all">{primaryShareUrl}</span>
+                {customDomainUrl ? (
+                  <Badge
+                    variant="outline"
+                    className="border-emerald-500/40 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300"
+                  >
+                    Custom domain primary
+                  </Badge>
+                ) : null}
               </div>
+              {customDomainUrl ? (
+                <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
+                  <span>Guestnix app link also exists:</span>
+                  <span className="break-all">{savedPublicUrl}</span>
+                </div>
+              ) : null}
             </div>
 
             <div className="flex flex-wrap gap-2">
@@ -666,7 +685,11 @@ export function GuidebookSettingsPage({
                 ) : (
                   <Copy className="h-4 w-4" />
                 )}
-                {copied ? "Copied" : "Copy link"}
+                {copied
+                  ? "Copied"
+                  : customDomainUrl
+                    ? "Copy custom link"
+                    : "Copy link"}
               </Button>
               {isOwner ? (
                 <Button
@@ -843,7 +866,7 @@ export function GuidebookSettingsPage({
                 ) : (
                   <Copy className="h-4 w-4" />
                 )}
-                {copied ? "Copied" : "Copy"}
+                {copied ? "Copied" : customDomainUrl ? "Copy custom" : "Copy"}
               </Button>
             }
           >
@@ -944,7 +967,12 @@ export function GuidebookSettingsPage({
                   ) : null}
                 </div>
               </div>
-              <QrCodeCard url={savedPublicUrl} />
+              <QrCodeCard
+                url={primaryShareUrl}
+                urlLabel={customDomainUrl ? "Custom domain" : "Guestnix app link"}
+                secondaryUrl={customDomainUrl ? savedPublicUrl : undefined}
+                secondaryUrlLabel="Guestnix app link"
+              />
             </div>
           </SectionShell>
 

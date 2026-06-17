@@ -1,7 +1,12 @@
 import { NextResponse } from "next/server";
 import { createServerClient } from "@/lib/supabase/server";
 import { db } from "@/lib/db";
-import { guidebooks, guidebookSections, guidebookBlocks } from "@/lib/db/schema";
+import {
+  customDomains,
+  guidebooks,
+  guidebookSections,
+  guidebookBlocks,
+} from "@/lib/db/schema";
 import { eq, asc, sql } from "drizzle-orm";
 import { updateGuidebookSchema } from "@/lib/validations";
 import {
@@ -18,6 +23,8 @@ import {
 } from "@/lib/guidebook-access";
 import { isPlatformAdmin } from "@/lib/auth/platform-admin";
 import { DEMO_GUIDEBOOK_SETTINGS_KEY } from "@/lib/guidebook-public-url";
+import { getProvider } from "@/lib/custom-domain-provider";
+import { invalidateCustomDomainCache } from "@/lib/custom-domain-resolver";
 
 export async function GET(
   _request: Request,
@@ -253,6 +260,26 @@ export async function DELETE(
     );
   }
 
+  const domains = await db
+    .select({
+      domain: customDomains.domain,
+      providerDomainId: customDomains.providerDomainId,
+    })
+    .from(customDomains)
+    .where(eq(customDomains.guidebookId, id));
+
+  for (const domain of domains) {
+    if (!domain.providerDomainId) continue;
+
+    try {
+      await getProvider().removeDomain(domain.domain);
+    } catch (err) {
+      const message =
+        err instanceof Error ? err.message : "Provider removal failed";
+      return NextResponse.json({ error: message }, { status: 502 });
+    }
+  }
+
   const [deleted] = await db
     .delete(guidebooks)
     .where(eq(guidebooks.id, id))
@@ -263,6 +290,10 @@ export async function DELETE(
       { error: GUIDEBOOK_UNAVAILABLE_MESSAGE },
       { status: 404 }
     );
+  }
+
+  for (const domain of domains) {
+    invalidateCustomDomainCache(domain.domain);
   }
 
   return NextResponse.json({ success: true });
