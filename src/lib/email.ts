@@ -27,21 +27,22 @@ const PRODUCTION_ASSET_ORIGIN = "https://guestnix.com";
 const BRAND_LOGO_PATH = "/brand/Guestnix full logo (for dark bg).svg";
 const EMAIL_FONT_STACK =
   "Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif";
+const BRAND_FONT_STACK =
+  "'Bricolage Grotesque', Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif";
 
 const EMAIL_BRAND = {
   ink: "#042129",
   mid: "#0A3D4D",
   mint: "#6FEF8B",
   paleMint: "#ECFFF5",
-  cream: "#F6F1EB",
-  background: "#F4F7F8",
+  panel: "#F5F8F8",
+  background: "#F3F5F6",
   surface: "#FFFFFF",
-  surfaceLow: "#FBFDFE",
   border: "#DDE8EC",
   text: "#042129",
-  bodyText: "#39505A",
-  muted: "#6B7C85",
-  softMuted: "#8AA0A9",
+  bodyText: "#53666F",
+  muted: "#82939A",
+  softMuted: "#8A9BA3",
 } as const;
 
 type EmailProvider = "resend" | "brevo";
@@ -127,21 +128,29 @@ export function renderBrandedEmail(input: BrandedEmailInput) {
     : "";
   const actionHtml = input.action
     ? `
-      <table role="presentation" cellspacing="0" cellpadding="0" border="0" style="margin:28px 0 18px">
-        <tr>
-          <td bgcolor="${EMAIL_BRAND.ink}" style="border-radius:10px">
-            <a href="${escapeHtml(input.action.url)}" style="display:inline-block;padding:14px 22px;font-size:15px;font-weight:800;line-height:20px;color:${EMAIL_BRAND.mint};text-decoration:none;border-radius:10px">
-              ${escapeHtml(input.action.label)}
-            </a>
-          </td>
-        </tr>
-      </table>
-      <p style="margin:0 0 4px;font-size:13px;line-height:20px;color:${EMAIL_BRAND.muted}">Button not working? Open this secure link:</p>
-      <p style="margin:0 0 22px;font-size:13px;line-height:20px;word-break:break-all">
-        <a href="${escapeHtml(input.action.url)}" style="color:${EMAIL_BRAND.mid};text-decoration:underline">${escapeHtml(
-          input.action.url
-        )}</a>
-      </p>
+                    <table cellpadding="0" cellspacing="0" role="presentation" align="center">
+                      <tr>
+                        <td style="background:${EMAIL_BRAND.ink};border-radius:12px">
+                          <a href="${escapeHtml(input.action.url)}" style="display:inline-block;padding:15px 28px;font-size:15px;font-weight:800;line-height:20px;color:${EMAIL_BRAND.mint};text-decoration:none;border-radius:12px">
+                            ${escapeHtml(input.action.label)}
+                          </a>
+                        </td>
+                      </tr>
+                    </table>
+    `
+    : "";
+  const fallbackHtml = input.action
+    ? `
+                <tr>
+                  <td style="padding:0 34px 34px">
+                    <p style="margin:0 0 8px;font-size:13px;line-height:20px;color:#7A8B92">
+                      Button not working? Open this secure link:
+                    </p>
+                    <a href="${escapeHtml(input.action.url)}" style="font-size:13px;line-height:20px;color:${EMAIL_BRAND.mid};word-break:break-all;text-decoration:underline">
+                      ${escapeHtml(input.action.url)}
+                    </a>
+                  </td>
+                </tr>
     `
     : "";
 
@@ -153,6 +162,13 @@ export function renderBrandedEmail(input: BrandedEmailInput) {
         <meta name="viewport" content="width=device-width,initial-scale=1">
         <meta name="color-scheme" content="light">
         <title>${escapedTitle}</title>
+        <style>
+          @import url('https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@600;700;800&family=Inter:wght@400;500;600;700;800&display=swap');
+
+          h1,h2,.brand-font {
+            font-family:${BRAND_FONT_STACK}!important;
+          }
+        </style>
       </head>
       <body style="margin:0;padding:0;background:${EMAIL_BRAND.background};font-family:${EMAIL_FONT_STACK};color:${EMAIL_BRAND.text};-webkit-text-size-adjust:100%;text-size-adjust:100%">
         <div style="display:none;max-height:0;overflow:hidden;opacity:0;color:transparent">
@@ -160,42 +176,50 @@ export function renderBrandedEmail(input: BrandedEmailInput) {
         </div>
         <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="background:${EMAIL_BRAND.background}">
           <tr>
-            <td align="center" style="padding:36px 14px">
-              <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="max-width:600px;background:${EMAIL_BRAND.surface};border:1px solid ${EMAIL_BRAND.border};border-radius:18px;overflow:hidden">
+            <td align="center" style="padding:40px 14px">
+              <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="max-width:620px;background:${EMAIL_BRAND.surface};border:1px solid ${EMAIL_BRAND.border};border-radius:24px;overflow:hidden">
                 <tr>
-                  <td style="padding:0;background:${EMAIL_BRAND.ink}">
-                    <div style="height:4px;background:${EMAIL_BRAND.mint};font-size:1px;line-height:4px">&nbsp;</div>
-                    <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0">
+                  <td style="background:${EMAIL_BRAND.ink};padding:30px 34px">
+                    <table role="presentation" width="100%" cellspacing="0" cellpadding="0">
                       <tr>
-                        <td style="padding:26px 30px 22px;vertical-align:middle">
+                        <td style="vertical-align:middle">
                           <img src="${escapeHtml(
                             logoUrl
-                          )}" width="150" height="41" alt="${escapeHtml(
+                          )}" width="155" alt="${escapeHtml(
                             app
-                          )}" style="display:block;width:150px;max-width:150px;height:auto;border:0;outline:none;text-decoration:none">
-                          <p style="margin:14px 0 0;color:rgba(246,241,235,0.72);font-size:13px;line-height:20px;font-weight:600">
-                            Digital guidebooks and guest workflows, beautifully handled.
-                          </p>
+                          )}" style="display:block;width:155px;max-width:155px;height:auto;border:0;outline:none;text-decoration:none">
+                        </td>
+                        <td align="right" style="vertical-align:middle">
+                          <div style="font-size:13px;line-height:20px;font-weight:600;color:rgba(246,241,235,.7)">
+                            ${escapedEyebrow}
+                          </div>
                         </td>
                       </tr>
                     </table>
                   </td>
                 </tr>
                 <tr>
-                  <td style="padding:36px 32px 14px">
-                    <p style="display:inline-block;margin:0 0 14px;padding:6px 10px;border-radius:999px;background:${EMAIL_BRAND.paleMint};color:${EMAIL_BRAND.mid};font-size:12px;font-weight:800;line-height:16px;letter-spacing:0;text-transform:none">${escapedEyebrow}</p>
-                    <h1 style="margin:0 0 18px;color:${EMAIL_BRAND.ink};font-size:28px;line-height:35px;font-weight:800;letter-spacing:0">${escapedTitle}</h1>
-                    <div style="font-size:15px;line-height:25px;color:${EMAIL_BRAND.bodyText}">
-                      ${input.bodyHtml}
+                  <td style="padding:34px">
+                    <div style="background:${EMAIL_BRAND.panel};border-radius:18px;padding:42px 30px;text-align:center">
+                      <div style="width:54px;height:54px;margin:auto auto 22px;border-radius:50%;background:${EMAIL_BRAND.paleMint};line-height:54px;font-size:24px;color:${EMAIL_BRAND.ink}">
+                        &#9993;
+                      </div>
+                      <h1 class="brand-font" style="margin:0 0 18px;font-family:${BRAND_FONT_STACK};font-size:32px;line-height:40px;font-weight:800;letter-spacing:0;color:${EMAIL_BRAND.ink}">
+                        ${escapedTitle}
+                      </h1>
+                      <div style="margin:0 auto 28px;max-width:430px;font-size:15px;line-height:25px;color:${EMAIL_BRAND.bodyText}">
+                        ${input.bodyHtml}
+                      </div>
+                      ${actionHtml}
                     </div>
-                    ${actionHtml}
                   </td>
                 </tr>
+                ${fallbackHtml}
                 <tr>
-                  <td style="padding:0 32px 32px">
-                    <div style="height:1px;background:${EMAIL_BRAND.border};margin:8px 0 20px"></div>
+                  <td style="padding:0 34px 34px">
+                    <div style="height:1px;background:${EMAIL_BRAND.border};margin-bottom:22px"></div>
                     ${footerNote}
-                    <p style="margin:0 0 6px;font-size:12px;line-height:18px;color:${EMAIL_BRAND.ink};font-weight:800">
+                    <p class="brand-font" style="margin:0 0 8px;font-family:${BRAND_FONT_STACK};font-size:15px;line-height:20px;font-weight:700;color:${EMAIL_BRAND.ink}">
                       ${escapeHtml(app)}
                     </p>
                     <p style="margin:0;font-size:12px;line-height:19px;color:${EMAIL_BRAND.softMuted}">

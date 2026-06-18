@@ -15,8 +15,8 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { PasswordInput } from "@/components/ui/password-input";
 
 export default function ResetPasswordPage() {
   const router = useRouter();
@@ -174,9 +174,8 @@ export default function ResetPasswordPage() {
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-1.5">
             <Label htmlFor="password">New password</Label>
-            <Input
+            <PasswordInput
               id="password"
-              type="password"
               placeholder="At least 6 characters"
               value={password}
               onChange={(event) => setPassword(event.target.value)}
@@ -186,9 +185,8 @@ export default function ResetPasswordPage() {
           </div>
           <div className="space-y-1.5">
             <Label htmlFor="confirm-password">Confirm password</Label>
-            <Input
+            <PasswordInput
               id="confirm-password"
-              type="password"
               placeholder="Repeat your new password"
               value={confirmPassword}
               onChange={(event) => setConfirmPassword(event.target.value)}

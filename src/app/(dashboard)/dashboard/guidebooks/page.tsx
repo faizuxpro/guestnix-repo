@@ -20,7 +20,6 @@ import {
   Eye,
   FileCheck2,
   FileText,
-  Plus,
   Search,
   UserRound,
   Users,
@@ -31,6 +30,7 @@ import {
   GuidebookCard,
   type GuidebookData,
 } from "@/components/dashboard/GuidebookCard";
+import { GuidebookCreateDropdown } from "@/components/dashboard/GuidebookCreateDropdown";
 import { QuickVariablesManager } from "@/components/dashboard/QuickVariablesManager";
 import { toast } from "sonner";
 import { apiFetch } from "@/lib/api-fetch";
@@ -342,11 +342,6 @@ function GuidebooksContent() {
     void fetchGuidebooks();
   }
 
-  function openGuidebookOnboarding() {
-    const query = propertyFilterId ? `?property=${propertyFilterId}` : "";
-    router.push(`/dashboard/guidebooks/new${query}`);
-  }
-
   function handleOpenQuickVariables(guidebook: GuidebookData) {
     setQuickVariablesGuidebook(guidebook);
     setQuickVariablesOpen(true);
@@ -421,10 +416,10 @@ function GuidebooksContent() {
             )}
           </p>
         </div>
-        <Button onClick={openGuidebookOnboarding}>
-          <Plus className="mr-2 h-4 w-4" />
-          New Guidebook
-        </Button>
+        <GuidebookCreateDropdown
+          label="New guidebook"
+          propertyId={propertyFilterId || undefined}
+        />
       </div>
 
       {hasPropertyFilter && (
@@ -453,10 +448,7 @@ function GuidebooksContent() {
             <p className="mb-4 max-w-sm text-sm text-muted-foreground">
               Create your first digital guidebook and share it with your guests.
             </p>
-            <Button onClick={openGuidebookOnboarding}>
-              <Plus className="mr-2 h-4 w-4" />
-              Create Guidebook
-            </Button>
+            <GuidebookCreateDropdown label="Create guidebook" />
           </CardContent>
         </Card>
       ) : (
@@ -509,10 +501,11 @@ function GuidebooksContent() {
                   {getEmptyMessage()}
                 </p>
                 {hasPropertyFilter && !hasScopedGuidebooks && (
-                  <Button className="mt-4" onClick={openGuidebookOnboarding}>
-                    <Plus className="mr-2 h-4 w-4" />
-                    New Guidebook
-                  </Button>
+                  <GuidebookCreateDropdown
+                    label="New guidebook"
+                    propertyId={propertyFilterId || undefined}
+                    className="mt-4"
+                  />
                 )}
               </CardContent>
             </Card>

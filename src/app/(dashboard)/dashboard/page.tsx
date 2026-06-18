@@ -62,6 +62,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { GuidebookCreateDropdown } from "@/components/dashboard/GuidebookCreateDropdown";
 
 export const dynamic = "force-dynamic";
 
@@ -745,10 +746,14 @@ function EmptyPanel({
       </span>
       <h3 className="font-medium">{title}</h3>
       <p className="mt-1 max-w-sm text-sm text-muted-foreground">{body}</p>
-      <Button className="mt-4" render={<Link href={action.href} />}>
-        <Plus className="h-4 w-4" />
-        {action.label}
-      </Button>
+      {action.href === "/dashboard/guidebooks/new" ? (
+        <GuidebookCreateDropdown label={action.label} className="mt-4" />
+      ) : (
+        <Button className="mt-4" render={<Link href={action.href} />}>
+          <Plus className="h-4 w-4" />
+          {action.label}
+        </Button>
+      )}
     </div>
   );
 }
@@ -1941,10 +1946,17 @@ export default async function DashboardPage() {
               guest activity, and the next host action.
             </p>
           </div>
-          <Button className="w-full lg:w-auto" render={<Link href={primaryAction.href} />}>
-            <PrimaryIcon className="h-4 w-4" />
-            {primaryAction.label}
-          </Button>
+          {primaryAction.href === "/dashboard/guidebooks/new" ? (
+            <GuidebookCreateDropdown
+              label={primaryAction.label}
+              className="w-full lg:w-auto"
+            />
+          ) : (
+            <Button className="w-full lg:w-auto" render={<Link href={primaryAction.href} />}>
+              <PrimaryIcon className="h-4 w-4" />
+              {primaryAction.label}
+            </Button>
+          )}
         </div>
 
         {readinessDone < readinessItems.length ? (

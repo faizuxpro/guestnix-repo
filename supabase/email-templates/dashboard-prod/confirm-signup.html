@@ -1,0 +1,105 @@
+<!doctype html>
+    <html lang="en">
+      <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width,initial-scale=1">
+        <meta name="color-scheme" content="light">
+        <title>Confirm your email</title>
+        <style>
+          @import url('https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@600;700;800&family=Inter:wght@400;500;600;700;800&display=swap');
+
+          h1,h2,.brand-font {
+            font-family:'Bricolage Grotesque', Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif!important;
+          }
+        </style>
+      </head>
+      <body style="margin:0;padding:0;background:#F3F5F6;font-family:Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif;color:#042129;-webkit-text-size-adjust:100%;text-size-adjust:100%">
+        <div style="display:none;max-height:0;overflow:hidden;opacity:0;color:transparent">Confirm your email to start building your first digital guidebook.</div>
+        <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="background:#F3F5F6">
+          <tr>
+            <td align="center" style="padding:40px 14px">
+              <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="max-width:620px;background:#FFFFFF;border:1px solid #DDE8EC;border-radius:24px;overflow:hidden">
+                <tr>
+                  <td style="background:#042129;padding:30px 34px">
+                    <table role="presentation" width="100%" cellspacing="0" cellpadding="0">
+                      <tr>
+                        <td style="vertical-align:middle">
+                          <img src="https://guestnix.com/brand/Guestnix%20full%20logo%20(for%20dark%20bg).svg" width="155" alt="Guestnix" style="display:block;width:155px;max-width:155px;height:auto;border:0;outline:none;text-decoration:none">
+                        </td>
+                        <td align="right" style="vertical-align:middle">
+                          <div style="font-size:13px;line-height:20px;font-weight:600;color:rgba(246,241,235,.7)">
+                            Confirm email
+                          </div>
+                        </td>
+                      </tr>
+                    </table>
+                  </td>
+                </tr>
+
+                <tr>
+                  <td style="padding:34px">
+                    <div style="background:#F5F8F8;border-radius:18px;padding:42px 30px;text-align:center">
+                      <div style="width:54px;height:54px;margin:auto auto 22px;border-radius:50%;background:#ECFFF5;line-height:54px;font-size:24px;color:#042129">
+                        &#9993;
+                      </div>
+
+                      <h1 class="brand-font" style="margin:0 0 18px;font-family:'Bricolage Grotesque', Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif;font-size:32px;line-height:40px;font-weight:800;letter-spacing:0;color:#042129">
+                        Confirm your email
+                      </h1>
+
+                      <div style="margin:0 auto 28px;max-width:430px;font-size:15px;line-height:25px;color:#53666F">
+                        <p style="margin:0 0 16px">Welcome to Guestnix. Confirm your email address to activate your account and start building your digital welcome guide.</p><p style="margin:0 0 16px">This link is single-use and expires automatically for your security.</p>
+                      </div>
+
+                      
+                    <table cellpadding="0" cellspacing="0" role="presentation" align="center">
+                      <tr>
+                        <td style="background:#042129;border-radius:12px">
+                          <a href="{{ .RedirectTo }}&amp;token_hash={{ .TokenHash }}&amp;type=email" style="display:inline-block;padding:15px 28px;font-size:15px;font-weight:800;line-height:20px;color:#6FEF8B;text-decoration:none;border-radius:12px">
+                            Confirm email
+                          </a>
+                        </td>
+                      </tr>
+                    </table>
+
+                    <p style="margin:24px 0 0;font-size:13px;line-height:20px;color:#82939A">
+                      This secure link expires automatically.
+                    </p>
+
+                    </div>
+                  </td>
+                </tr>
+
+                
+                <tr>
+                  <td style="padding:0 34px 34px">
+                    <p style="margin:0 0 8px;font-size:13px;line-height:20px;color:#7A8B92">
+                      Button not working? Open this secure link:
+                    </p>
+
+                    <a href="{{ .RedirectTo }}&amp;token_hash={{ .TokenHash }}&amp;type=email" style="font-size:13px;line-height:20px;color:#0A3D4D;word-break:break-all;text-decoration:underline">
+                      {{ .RedirectTo }}&amp;token_hash={{ .TokenHash }}&amp;type=email
+                    </a>
+                  </td>
+                </tr>
+
+
+                <tr>
+                  <td style="padding:0 34px 34px">
+                    <div style="height:1px;background:#DDE8EC;margin-bottom:22px"></div>
+
+                    <p class="brand-font" style="margin:0 0 8px;font-family:'Bricolage Grotesque', Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif;font-size:15px;line-height:20px;font-weight:700;color:#042129">
+                      Guestnix
+                    </p>
+
+                    <p style="margin:0;font-size:12px;line-height:19px;color:#8A9BA3">
+                      Beautiful digital guidebooks, faster guest replies, and smoother stays for modern hosts.
+                    </p>
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+        </table>
+      </body>
+    </html>

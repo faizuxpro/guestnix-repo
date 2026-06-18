@@ -302,7 +302,7 @@ export function MarketingNav() {
             aria-label={mobileOpen ? "Close menu" : "Open menu"}
             aria-expanded={mobileOpen}
             onClick={toggleMobileMenu}
-            className="sm:hidden inline-flex h-11 w-11 items-center justify-center rounded-xl border border-white/15 text-white"
+            className="lg:hidden inline-flex h-11 w-11 items-center justify-center rounded-xl border border-white/15 text-white"
           >
             {mobileOpen ? <X size={18} /> : <Menu size={18} />}
           </button>
@@ -432,7 +432,7 @@ export function MarketingNav() {
 
         <div
           className={cn(
-            "sm:hidden transition-all duration-300",
+            "lg:hidden transition-all duration-300",
             mobileOpen
               ? "max-h-[calc(100vh-92px)] overflow-y-auto overscroll-contain opacity-100 pb-3"
               : "max-h-0 overflow-hidden opacity-0"

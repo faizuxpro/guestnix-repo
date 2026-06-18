@@ -9,6 +9,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { GuidebookCreateDropdown } from "@/components/dashboard/GuidebookCreateDropdown";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -25,7 +26,6 @@ import {
   MapPin,
   MoreVertical,
   Pencil,
-  Plus,
   Trash2,
 } from "lucide-react";
 
@@ -149,17 +149,11 @@ export function PropertyCard({ property, onEdit, onDelete }: PropertyCardProps) 
             <BookOpen className="mr-1.5 h-3.5 w-3.5" />
             View guidebooks
           </Button>
-          <Button
+          <GuidebookCreateDropdown
+            label="New guidebook"
+            propertyId={property.id}
             size="sm"
-            render={
-              <Link
-                href={`/dashboard/guidebooks/new?property=${property.id}`}
-              />
-            }
-          >
-            <Plus className="mr-1.5 h-3.5 w-3.5" />
-            New guidebook
-          </Button>
+          />
         </div>
       </CardContent>
     </Card>

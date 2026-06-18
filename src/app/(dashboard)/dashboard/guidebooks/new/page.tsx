@@ -1,6 +1,6 @@
 import { eq } from "drizzle-orm";
 import { redirect } from "next/navigation";
-import { GuidebookOnboardingFlow } from "@/components/dashboard/GuidebookOnboardingFlow";
+import { GuidebookMiniEditorQuickFlow } from "@/components/dashboard/GuidebookMiniEditorQuickFlow";
 import { createServerClient } from "@/lib/supabase/server";
 import { db } from "@/lib/db";
 import { properties } from "@/lib/db/schema";
@@ -30,5 +30,5 @@ export default async function NewGuidebookPage() {
     .where(eq(properties.userId, user.id))
     .orderBy(properties.createdAt);
 
-  return <GuidebookOnboardingFlow properties={hostProperties} />;
+  return <GuidebookMiniEditorQuickFlow properties={hostProperties} />;
 }

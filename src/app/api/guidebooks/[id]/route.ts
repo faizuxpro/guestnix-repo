@@ -9,6 +9,7 @@ import {
 } from "@/lib/db/schema";
 import { eq, asc, sql } from "drizzle-orm";
 import { updateGuidebookSchema } from "@/lib/validations";
+import { normalizeHeroData } from "@/lib/hero-data";
 import {
   requireGuidebookAccess,
   requireGuidebookDraftEdit,
@@ -121,6 +122,7 @@ export async function PATCH(
       parsed.data.templateId !== undefined ||
       parsed.data.propertyId !== undefined ||
       parsed.data.branding !== undefined ||
+      parsed.data.heroData !== undefined ||
       parsed.data.settings !== undefined)
   ) {
     return NextResponse.json(
@@ -176,9 +178,65 @@ export async function PATCH(
           ),
         }
       : undefined;
+  const { heroData, ...guidebookPatch } = parsed.data;
+  const nextHeroData =
+    heroData !== undefined
+      ? (() => {
+          const current = normalizeHeroData(access.guidebook.heroData);
+          return {
+            property: { ...current.property, ...(heroData.property ?? {}) },
+            host: { ...current.host, ...(heroData.host ?? {}) },
+            home: {
+              ...current.home,
+              ...(heroData.home ?? {}),
+              show: {
+                ...current.home.show,
+                ...(heroData.home?.show ?? {}),
+              },
+              times: {
+                ...current.home.times,
+                ...(heroData.home?.times ?? {}),
+              },
+              logo: {
+                ...current.home.logo,
+                ...(heroData.home?.logo ?? {}),
+              },
+              solid_background_color: {
+                ...current.home.solid_background_color,
+                ...(heroData.home?.solid_background_color ?? {}),
+              },
+              glass_shadow: {
+                ...current.home.glass_shadow,
+                ...(heroData.home?.glass_shadow ?? {}),
+              },
+              overlay_container: {
+                ...current.home.overlay_container,
+                ...(heroData.home?.overlay_container ?? {}),
+              },
+              background: {
+                ...current.home.background,
+                ...(heroData.home?.background ?? {}),
+                position: {
+                  ...current.home.background.position,
+                  ...(heroData.home?.background?.position ?? {}),
+                },
+              },
+            },
+            host_page: {
+              ...current.host_page,
+              ...(heroData.host_page ?? {}),
+              show: {
+                ...current.host_page.show,
+                ...(heroData.host_page?.show ?? {}),
+              },
+            },
+          };
+        })()
+      : undefined;
   const updateValues = {
-    ...parsed.data,
+    ...guidebookPatch,
     ...(nextSettings !== undefined ? { settings: nextSettings } : {}),
+    ...(nextHeroData !== undefined ? { heroData: nextHeroData } : {}),
   };
 
   const [updated] = await db

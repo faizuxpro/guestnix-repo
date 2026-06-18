@@ -123,7 +123,7 @@ export function NewGuidebookDialog({
         <DialogHeader>
           <DialogTitle>Create New Guidebook</DialogTitle>
           <DialogDescription>
-            Set up your guidebook basics. You can customize everything in the editor.
+            Set up your guidebook basics. You can customize everything in the Advanced Editor.
           </DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">
@@ -221,7 +221,7 @@ export function NewGuidebookDialog({
             </Button>
             <Button type="submit" disabled={loading || !title.trim()}>
               {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              Create & Open Editor
+              Create & Open Advanced Editor
             </Button>
           </DialogFooter>
         </form>

@@ -2148,24 +2148,52 @@
 }
 
 .tpl-sunset .sl-store-recent {
+  position: relative;
+  isolation: isolate;
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
   align-items: stretch;
   justify-content: space-between;
-  gap: 0.9rem;
+  gap: 1rem;
   width: min(1040px, calc(100% - 2rem));
   margin: 1rem auto 0;
-  padding: 0.85rem;
-  border: 1px solid var(--border);
+  overflow: hidden;
+  padding: 1rem;
+  border: 1px solid rgba(var(--secondary-rgb), 0.42);
   border-radius: 8px;
-  background: rgba(255, 255, 255, 0.74);
-  box-shadow: 0 12px 34px -30px rgba(var(--primary-rgb), 0.45);
+  background:
+    linear-gradient(
+      135deg,
+      rgba(var(--primary-rgb), 0.1) 0%,
+      rgba(var(--secondary-rgb), 0.15) 45%,
+      rgba(255, 255, 255, 0.88) 100%
+    );
+  box-shadow:
+    0 22px 52px -34px rgba(var(--primary-rgb), 0.78),
+    0 0 0 4px rgba(var(--secondary-rgb), 0.06);
+}
+
+.tpl-sunset .sl-store-recent::before {
+  content: "";
+  position: absolute;
+  inset: 0 auto 0 0;
+  z-index: 0;
+  width: 5px;
+  background: linear-gradient(
+    180deg,
+    var(--accent) 0%,
+    rgba(var(--secondary-rgb), 0.9) 100%
+  );
 }
 
 .tpl-sunset .sl-store-recent-copy {
+  position: relative;
+  z-index: 1;
   display: grid;
-  gap: 0.15rem;
+  align-content: center;
+  gap: 0.18rem;
   min-width: 0;
+  padding-left: 0.35rem;
 }
 
 .tpl-sunset .sl-store-recent span {
@@ -2176,10 +2204,22 @@
   letter-spacing: 0.08em;
 }
 
+.tpl-sunset .sl-store-recent-copy > span {
+  display: inline-flex;
+  width: fit-content;
+  min-height: 1.35rem;
+  align-items: center;
+  border: 1px solid rgba(var(--secondary-rgb), 0.32);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.68);
+  padding: 0.16rem 0.46rem;
+  color: var(--primary);
+}
+
 .tpl-sunset .sl-store-recent strong {
   min-width: 0;
   color: var(--primary);
-  font-size: calc(0.96rem * var(--secondary-font-scale));
+  font-size: calc(1.04rem * var(--secondary-font-scale));
   overflow-wrap: anywhere;
 }
 
@@ -2192,6 +2232,8 @@
 }
 
 .tpl-sunset .sl-store-recent-links {
+  position: relative;
+  z-index: 1;
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(148px, 1fr));
   justify-content: stretch;
@@ -2200,21 +2242,45 @@
 }
 
 .tpl-sunset .sl-store-recent-links a {
+  position: relative;
   display: grid;
   align-content: center;
   gap: 0.35rem;
   min-height: 64px;
-  padding: 0.58rem 0.68rem;
-  border: 1px solid var(--border);
+  overflow: hidden;
+  padding: 0.66rem 0.72rem;
+  border: 1px solid rgba(var(--primary-rgb), 0.14);
   border-radius: 8px;
-  background: var(--white);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.96), rgba(255, 255, 255, 0.8));
   color: var(--primary);
   text-decoration: none;
+  box-shadow:
+    0 10px 24px -20px rgba(var(--primary-rgb), 0.58),
+    inset 0 1px 0 rgba(255, 255, 255, 0.78);
+  transition:
+    border-color 160ms ease,
+    box-shadow 160ms ease,
+    transform 160ms ease;
+}
+
+.tpl-sunset .sl-store-recent-links a:hover {
+  border-color: rgba(var(--secondary-rgb), 0.5);
+  box-shadow:
+    0 14px 28px -20px rgba(var(--primary-rgb), 0.68),
+    0 0 0 3px rgba(var(--secondary-rgb), 0.12),
+    inset 0 1px 0 rgba(255, 255, 255, 0.82);
+  transform: translateY(-1px);
 }
 
 .tpl-sunset .sl-store-recent-links a[data-store-updated="true"] {
-  border-color: rgba(225, 41, 90, 0.34);
-  background: rgba(225, 41, 90, 0.08);
+  border-color: rgba(225, 41, 90, 0.44);
+  background:
+    linear-gradient(135deg, rgba(225, 41, 90, 0.13), rgba(255, 255, 255, 0.88));
+  box-shadow:
+    0 14px 30px -22px rgba(225, 41, 90, 0.62),
+    0 0 0 3px rgba(225, 41, 90, 0.08),
+    inset 0 1px 0 rgba(255, 255, 255, 0.82);
 }
 
 .tpl-sunset .sl-store-recent-links a span {

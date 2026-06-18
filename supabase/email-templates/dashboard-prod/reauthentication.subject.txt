@@ -1,0 +1,1 @@
+{{ .Token }} is your Guestnix verification code

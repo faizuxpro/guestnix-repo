@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useAuth } from "@/hooks/use-auth";
@@ -15,6 +16,7 @@ import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
   Sheet,
+  SheetClose,
   SheetContent,
   SheetTrigger,
   SheetTitle,
@@ -37,6 +39,7 @@ import {
   Shield,
   ShoppingBag,
   Menu,
+  X,
   LogOut,
   CreditCard,
   User,
@@ -91,6 +94,7 @@ export function Topbar({
   isPlatformAdmin?: boolean;
 }) {
   const pathname = usePathname();
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const pageTitle = useDashboardPageTitleState();
   const shellTitle = pageTitle?.title.trim() || getBreadcrumb(pathname);
   const shellSubtitle = pageTitle?.subtitle?.trim();
@@ -102,16 +106,42 @@ export function Topbar({
   return (
     <header className="flex items-center h-14 px-4 border-b bg-card gap-4">
       {/* Mobile menu */}
-      <Sheet>
-        <SheetTrigger render={<Button variant="ghost" size="icon" className="md:hidden" />}>
+      <Sheet open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
+        <SheetTrigger
+          render={
+            <Button
+              variant="ghost"
+              size="icon"
+              className="md:hidden"
+              aria-label="Open navigation"
+              aria-expanded={mobileMenuOpen}
+            />
+          }
+        >
           <Menu className="h-5 w-5" />
         </SheetTrigger>
-        <SheetContent side="left" className="w-64 p-0">
+        <SheetContent side="left" showCloseButton={false} className="w-64 p-0">
           <SheetTitle className="sr-only">Navigation</SheetTitle>
-          <div className="flex items-center h-16 px-4 border-b">
-            <Link href="/dashboard" className="flex items-center gap-2">
-              <BrandLockup size="sm" />
+          <div className="flex h-16 items-center justify-between border-b border-sidebar-border bg-sidebar px-4 text-sidebar-foreground">
+            <Link
+              href="/dashboard"
+              className="flex items-center gap-2"
+              onClick={() => setMobileMenuOpen(false)}
+            >
+              <BrandLockup size="sm" tone="light" />
             </Link>
+            <SheetClose
+              render={
+                <Button
+                  variant="ghost"
+                  size="icon-sm"
+                  className="text-sidebar-foreground/80 hover:bg-sidebar-accent hover:text-sidebar-foreground focus-visible:border-sidebar-ring/60 focus-visible:ring-sidebar-ring/40"
+                  aria-label="Close navigation"
+                />
+              }
+            >
+              <X className="size-4" aria-hidden="true" />
+            </SheetClose>
           </div>
           <nav className="space-y-1 p-2">
             {navItems.map((item) => {
@@ -125,6 +155,7 @@ export function Topbar({
                 <Link
                   key={item.href}
                   href={item.href}
+                  onClick={() => setMobileMenuOpen(false)}
                   className={cn(
                     "flex items-center gap-3 rounded-lg px-3 py-2 text-sm transition-colors",
                     isActive

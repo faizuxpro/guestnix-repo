@@ -4,6 +4,7 @@ import { Topbar } from "@/components/dashboard/Topbar";
 import { TrialBanner } from "@/components/dashboard/TrialBanner";
 import { DashboardAnnouncementBanner } from "@/components/dashboard/DashboardAnnouncementBanner";
 import { DashboardPageTitleProvider } from "@/components/dashboard/DashboardPageTitle";
+import { FeedbackDialogProvider } from "@/components/ui/feedback-dialog";
 import { createServerClient } from "@/lib/supabase/server";
 import { getUserEntitlement } from "@/lib/billing/entitlements";
 import { isPlatformAdmin } from "@/lib/auth/platform-admin";
@@ -42,22 +43,24 @@ export default async function DashboardLayout({
   };
 
   return (
-    <DashboardPageTitleProvider>
-      <div className="brand-refresh-scope brand-refresh-typography fixed inset-0 flex min-h-0 min-w-0 overflow-hidden">
-        <Sidebar trial={trial} isPlatformAdmin={platformAdmin} />
-        <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
-          <DashboardAnnouncementBanner />
-          <Topbar isPlatformAdmin={platformAdmin} />
-          {/* Mobile only: the sidebar (with its trial card) is hidden < md, so
-              show a slim banner here instead. */}
-          <div className="md:hidden">
-            <TrialBanner {...trial} />
+    <FeedbackDialogProvider>
+      <DashboardPageTitleProvider>
+        <div className="brand-refresh-scope brand-refresh-typography fixed inset-0 flex min-h-0 min-w-0 overflow-hidden">
+          <Sidebar trial={trial} isPlatformAdmin={platformAdmin} />
+          <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
+            <DashboardAnnouncementBanner />
+            <Topbar isPlatformAdmin={platformAdmin} />
+            {/* Mobile only: the sidebar (with its trial card) is hidden < md, so
+                show a slim banner here instead. */}
+            <div className="md:hidden">
+              <TrialBanner {...trial} />
+            </div>
+            <main className="min-h-0 min-w-0 flex-1 overflow-y-auto overflow-x-hidden p-4 sm:p-6 lg:p-8">
+              {children}
+            </main>
           </div>
-          <main className="min-h-0 min-w-0 flex-1 overflow-y-auto overflow-x-hidden p-4 sm:p-6 lg:p-8">
-            {children}
-          </main>
         </div>
-      </div>
-    </DashboardPageTitleProvider>
+      </DashboardPageTitleProvider>
+    </FeedbackDialogProvider>
   );
 }

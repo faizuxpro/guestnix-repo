@@ -1,11 +1,9 @@
 "use client";
 
-import { useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { motion } from "motion/react";
 import { MaterialIcon } from "./ui/MaterialIcon";
-import { ComingSoonDialog } from "./ui/ComingSoonDialog";
 
 type Demo = {
   slug: "sunset-template" | "demo-cabin" | "demo-flat";
@@ -17,6 +15,8 @@ type Demo = {
   bullets: string[];
   live: boolean;
 };
+
+const DEMO_URL = "/demo/sunset-template";
 
 const DEMOS: Demo[] = [
   {
@@ -60,8 +60,6 @@ const DEMOS: Demo[] = [
 ];
 
 export function LiveDemoSection() {
-  const [pending, setPending] = useState<Demo | null>(null);
-
   return (
     <section
       id="demo"
@@ -127,33 +125,17 @@ export function LiveDemoSection() {
                     </li>
                   ))}
                 </ul>
-                {d.live ? (
-                  <Link
-                    href={`/demo/${d.slug}`}
-                    className="block w-full py-3 text-center rounded-xl font-semibold text-[color:var(--marketing-primary)] border border-[color:var(--marketing-primary)]/30 hover:bg-[color:var(--marketing-primary)]/5 transition-colors"
-                  >
-                    View live guide
-                  </Link>
-                ) : (
-                  <button
-                    type="button"
-                    onClick={() => setPending(d)}
-                    className="block w-full py-3 text-center rounded-xl font-semibold text-[color:var(--marketing-muted)] border border-[color:var(--marketing-border)] hover:border-[color:var(--marketing-primary)]/30 hover:text-[color:var(--marketing-primary)] transition-colors"
-                  >
-                    Coming soon
-                  </button>
-                )}
+                <Link
+                  href={d.live ? `/demo/${d.slug}` : DEMO_URL}
+                  className="block w-full py-3 text-center rounded-xl font-semibold text-[color:var(--marketing-primary)] border border-[color:var(--marketing-primary)]/30 hover:bg-[color:var(--marketing-primary)]/5 transition-colors"
+                >
+                  {d.live ? "View live guide" : "View Sunset demo"}
+                </Link>
               </div>
             </motion.article>
           ))}
         </div>
       </div>
-
-      <ComingSoonDialog
-        open={pending !== null}
-        onOpenChange={(o) => !o && setPending(null)}
-        propertyName={pending?.name ?? ""}
-      />
     </section>
   );
 }

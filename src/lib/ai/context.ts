@@ -1,19 +1,27 @@
-import { asc, eq } from "drizzle-orm";
+import { and, desc, eq } from "drizzle-orm";
 import { db } from "@/lib/db";
 import {
   guidebooks,
-  guidebookSections,
-  guidebookBlocks,
-  guidebookPlaces,
-  profiles,
+  guidebookPublications,
 } from "@/lib/db/schema";
 import { getCountryEntry } from "@/lib/emergency-numbers";
 import { getPhrasebookLanguage, type PhrasebookCategory } from "@/lib/phrasebook";
+import {
+  fetchPublishedSnapshot,
+  fetchPublishedSnapshotByPath,
+  type GuidebookSnapshot,
+  type SnapshotBlock,
+  type SnapshotPlace,
+} from "@/lib/snapshot";
+import { formatFullAddress, normalizeHeroData, type HeroData } from "@/lib/hero-data";
+import { formatStoreMoney, getPublicStorefrontItems } from "@/lib/store/public";
+import type { SnapshotStorefront } from "@/lib/store/types";
 import {
   buildQuickVariableRenderPayload,
   readQuickVariablesFromSettings,
   resolveQuickVariablesInBlockContent,
   resolveQuickVariablesInString,
+  resolveQuickVariablesInValue,
 } from "@/lib/quick-variables";
 
 type BuildResult = {
@@ -23,69 +31,72 @@ type BuildResult = {
   userId: string;
 };
 
-type Block = typeof guidebookBlocks.$inferSelect;
+type Block = SnapshotBlock;
+type GuidebookRow = typeof guidebooks.$inferSelect;
 
 export async function buildGuidebookContext(
   guidebookId: string
 ): Promise<BuildResult | null> {
   const gb = await db.query.guidebooks.findFirst({
     where: eq(guidebooks.id, guidebookId),
-    with: { property: true },
   });
-  if (!gb) return null;
+  if (!gb || gb.status !== "published") return null;
 
-  const [sections, blocks, places, host] = await Promise.all([
-    db
-      .select()
-      .from(guidebookSections)
-      .where(eq(guidebookSections.guidebookId, guidebookId))
-      .orderBy(asc(guidebookSections.orderIndex)),
-    db
-      .select()
-      .from(guidebookBlocks)
-      .where(eq(guidebookBlocks.guidebookId, guidebookId))
-      .orderBy(asc(guidebookBlocks.orderIndex)),
-    db
-      .select()
-      .from(guidebookPlaces)
-      .where(eq(guidebookPlaces.guidebookId, guidebookId))
-      .orderBy(asc(guidebookPlaces.orderIndex)),
-    db.query.profiles.findFirst({ where: eq(profiles.id, gb.userId) }),
-  ]);
+  const snapshot = await loadLatestPublishedSnapshot(gb);
+  if (!snapshot) return null;
 
-  const hostFirstName =
-    (host?.fullName ?? "").split(" ")[0] || "your host";
-  const propertyName = gb.property?.name ?? gb.title;
-  const city = [gb.property?.city, gb.property?.state].filter(Boolean).join(", ");
+  const rawPropertyName =
+    snapshot.guidebook.propertyName || snapshot.guidebook.title;
+  const rawHostFirstName = snapshot.guidebook.hostFirstName || "your host";
   const quickVariables = buildQuickVariableRenderPayload({
     quickVariables: readQuickVariablesFromSettings(gb.settings),
     mode: "live",
     publicMode: true,
     context: {
-      guidebookTitle: gb.title,
-      propertyName,
-      propertyLocation: city,
-      hostName: host?.fullName ?? hostFirstName,
-      hostPhone: null,
-      hostEmail: host?.email ?? null,
-      heroData: gb.heroData,
+      guidebookTitle: snapshot.guidebook.title,
+      propertyName: rawPropertyName,
+      hostName: rawHostFirstName,
+      heroData: snapshot.guidebook.heroData,
     },
   });
 
+  const heroData = normalizeHeroData(
+    resolveQuickVariablesInValue(snapshot.guidebook.heroData, quickVariables)
+  );
+  const propertyName =
+    resolveQuickVariablesInString(rawPropertyName, quickVariables) ||
+    snapshot.guidebook.title;
+  const hostFirstName =
+    resolveQuickVariablesInString(rawHostFirstName, quickVariables) ||
+    "your host";
+  const address = formatFullAddress(heroData.property);
+  const places = snapshot.places.map((place) =>
+    resolveQuickVariablesInValue(place, quickVariables)
+  ) as SnapshotPlace[];
+  const storefront = snapshot.storefront
+    ? (resolveQuickVariablesInValue(
+        snapshot.storefront,
+        quickVariables
+      ) as SnapshotStorefront)
+    : null;
+
   const lines: string[] = [];
   lines.push(`PROPERTY: ${propertyName}`);
-  if (city) lines.push(`CITY: ${city}`);
+  if (address) lines.push(`ADDRESS: ${address}`);
   lines.push("");
+  appendHomeAndHostContext(lines, heroData);
 
   const blocksBySection = new Map<string, Block[]>();
-  for (const b of blocks) {
+  for (const b of snapshot.blocks) {
     if (!blocksBySection.has(b.sectionId)) blocksBySection.set(b.sectionId, []);
     blocksBySection.get(b.sectionId)!.push(b);
   }
 
-  for (const section of sections) {
+  for (const section of snapshot.sections.slice().sort(byOrderIndex)) {
     if (!section.isVisible) continue;
-    const sectionBlocks = blocksBySection.get(section.id) ?? [];
+    const sectionBlocks = (blocksBySection.get(section.id) ?? []).sort(
+      byOrderIndex
+    );
     const serialized = sectionBlocks
       .filter((b) => b.isVisible)
       .map((b) =>
@@ -96,7 +107,7 @@ export async function buildGuidebookContext(
             (b.content ?? {}) as Record<string, unknown>,
             quickVariables
           ),
-        })
+        }, places)
       )
       .filter((s): s is string => Boolean(s));
 
@@ -113,21 +124,12 @@ export async function buildGuidebookContext(
   if (places.length > 0) {
     lines.push(`== Local Places ==`);
     for (const p of places) {
-      const parts = [resolveQuickVariablesInString(p.name, quickVariables)];
-      if (p.category) parts.push(`(${p.category})`);
-      lines.push(
-        `- ${parts.join(" ")}${
-          p.description
-            ? ` - ${resolveQuickVariablesInString(
-                p.description,
-                quickVariables
-              )}`
-            : ""
-        }`
-      );
+      lines.push(serializePlace(p));
     }
     lines.push("");
   }
+
+  appendStorefrontContext(lines, storefront);
 
   return {
     context: lines.join("\n").trim(),
@@ -137,7 +139,119 @@ export async function buildGuidebookContext(
   };
 }
 
-function serializeBlock(block: Block): string | null {
+async function loadLatestPublishedSnapshot(
+  guidebook: GuidebookRow
+): Promise<GuidebookSnapshot | null> {
+  const explicitPublication = guidebook.latestPublicationId
+    ? await db.query.guidebookPublications.findFirst({
+        where: and(
+          eq(guidebookPublications.id, guidebook.latestPublicationId),
+          eq(guidebookPublications.guidebookId, guidebook.id)
+        ),
+      })
+    : null;
+
+  const latestPublication =
+    explicitPublication ??
+    (
+      await db
+        .select()
+        .from(guidebookPublications)
+        .where(eq(guidebookPublications.guidebookId, guidebook.id))
+        .orderBy(desc(guidebookPublications.version))
+        .limit(1)
+    )[0];
+
+  if (latestPublication) {
+    const snapshot = await fetchPublishedSnapshotByPath(
+      latestPublication.snapshotPath
+    );
+    if (snapshot) return snapshot;
+  }
+
+  return fetchPublishedSnapshot(guidebook.slug);
+}
+
+function appendHomeAndHostContext(lines: string[], heroData: HeroData) {
+  const homeParts = [
+    heroData.property.tagline,
+    heroData.home.show.host_name && heroData.host.name
+      ? `${heroData.home.host_label || "Hosted by"} ${heroData.host.name}`
+      : "",
+    heroData.home.show.phone ? heroData.host.phone : "",
+    heroData.home.show.email ? heroData.host.email : "",
+    heroData.home.show.times
+      ? `${heroData.home.times.checkin_label || "Check-in"}: ${
+          heroData.home.times.checkin_time || "4:00 PM"
+        }`
+      : "",
+    heroData.home.show.times
+      ? `${heroData.home.times.checkout_label || "Check-out"}: ${
+          heroData.home.times.checkout_time || "11:00 AM"
+        }`
+      : "",
+  ].filter(nonEmptyString);
+
+  if (homeParts.length > 0) {
+    lines.push("== Home ==");
+    lines.push(...homeParts);
+    lines.push("");
+  }
+
+  const hostSocial = heroData.host_page.show.social
+    ? heroData.host.social.flatMap((social) =>
+        [social.label, social.url].filter(nonEmptyString)
+      )
+    : [];
+  const hostParts = [
+    heroData.host.name,
+    heroData.host_page.show.bio ? heroData.host.bio : "",
+    heroData.host_page.show.languages ? `Languages: ${heroData.host.languages}` : "",
+    heroData.host_page.show.superhost && heroData.host.superhost
+      ? "Superhost"
+      : "",
+    heroData.host_page.show.phone ? `Phone: ${heroData.host.phone}` : "",
+    heroData.host_page.show.email ? `Email: ${heroData.host.email}` : "",
+    ...hostSocial,
+  ].filter(nonEmptyString);
+
+  if (hostParts.length > 0) {
+    lines.push("== Host ==");
+    lines.push(...hostParts);
+    lines.push("");
+  }
+}
+
+function appendStorefrontContext(
+  lines: string[],
+  storefront: SnapshotStorefront | null
+) {
+  const items = getPublicStorefrontItems(storefront);
+  if (items.length === 0) return;
+
+  lines.push("== Store ==");
+  const intro = storefront?.intro;
+  if (intro?.enabled) {
+    const introParts = [intro.eyebrow, intro.title, intro.subtitle].filter(
+      (part): part is string => Boolean(part)
+    );
+    if (introParts.length > 0) lines.push(introParts.join(" - "));
+  }
+
+  for (const item of items) {
+    const details = [
+      item.description,
+      item.category ? `category: ${item.category}` : "",
+      item.unitLabel ? `unit: ${item.unitLabel}` : "",
+      `price: ${formatStoreMoney(item.priceCents, item.currency)}`,
+      item.maxQuantity ? `limit: ${item.maxQuantity}` : "",
+    ].filter(Boolean);
+    lines.push(`- ${item.name}${details.length > 0 ? ` - ${details.join("; ")}` : ""}`);
+  }
+  lines.push("");
+}
+
+function serializeBlock(block: Block, places: SnapshotPlace[] = []): string | null {
   const c = (block.content ?? {}) as Record<string, unknown>;
 
   switch (block.type) {
@@ -254,9 +368,8 @@ function serializeBlock(block: Block): string | null {
       return plain;
     }
     case "heading": {
-      const text = str(c.text);
-      if (!text) return null;
-      return text;
+      const parts = [str(c.eyebrow), str(c.text), str(c.subtitle)].filter(Boolean);
+      return parts.length > 0 ? parts.join("\n") : null;
     }
     case "icon_grid": {
       const items = Array.isArray(c.items)
@@ -338,7 +451,7 @@ function serializeBlock(block: Block): string | null {
               typeof child.orderIndex === "number" ? child.orderIndex : index,
             isVisible:
               typeof child.isVisible === "boolean" ? child.isVisible : true,
-          } as Block);
+          } as Block, places);
         })
         .filter((line): line is string => Boolean(line));
       parts.push(...childLines);
@@ -541,6 +654,9 @@ function serializeBlock(block: Block): string | null {
       if (forecastDays !== null) parts.push(`Forecast days: ${forecastDays}`);
       return parts.length > 0 ? parts.join("\n") : null;
     }
+    case "add_places": {
+      return serializeAddPlacesBlock(c, places);
+    }
     case "faq": {
       const items = Array.isArray(c.items)
         ? (c.items as Array<Record<string, unknown>>)
@@ -574,16 +690,100 @@ function serializeBlock(block: Block): string | null {
       if (described.length === 0) return null;
       return described.map((line) => `- ${line}`).join("\n");
     }
-    case "image":
+    case "image": {
+      const caption = str(c.caption);
+      const alt = str(c.alt);
+      const text = caption || alt;
+      return text || null;
+    }
     case "divider":
       return null;
     default:
-      return null;
+      return serializeGenericBlock(block.type, c);
   }
+}
+
+function serializeAddPlacesBlock(
+  content: Record<string, unknown>,
+  places: SnapshotPlace[]
+) {
+  const title = str(content.title);
+  const subtitle = str(content.subtitle);
+  const selectionMode = content.selection_mode === "custom" ? "custom" : "all";
+  const selectedIds =
+    selectionMode === "custom" ? new Set(stringArray(content.place_ids)) : null;
+  const selectedPlaces = places
+    .filter((place) => place.name.trim().length > 0)
+    .filter((place) => !selectedIds || selectedIds.has(place.id))
+    .sort((a, b) => a.name.localeCompare(b.name));
+
+  const parts = [title, subtitle].filter(Boolean);
+  if (selectedPlaces.length > 0) {
+    parts.push(...selectedPlaces.map((place) => serializePlace(place)));
+  }
+
+  return parts.length > 0 ? parts.join("\n") : null;
+}
+
+function serializePlace(place: SnapshotPlace) {
+  const head = [place.name, place.category ? `(${place.category})` : ""]
+    .filter(Boolean)
+    .join(" ");
+  const details = [
+    place.description,
+    place.address,
+    place.phone ? `phone: ${place.phone}` : "",
+    place.email ? `email: ${place.email}` : "",
+    place.website ? `website: ${place.website}` : "",
+    place.openingHours ? `hours: ${place.openingHours}` : "",
+  ].filter(Boolean);
+  return `- ${head}${details.length > 0 ? ` - ${details.join("; ")}` : ""}`;
+}
+
+const GENERIC_SKIP_KEYS = new Set([
+  "url",
+  "image_url",
+  "imageUrl",
+  "cover_image_url",
+  "avatar_url",
+  "logo_url",
+  "config",
+  "style",
+  "accent_color",
+]);
+
+function serializeGenericBlock(type: string, content: Record<string, unknown>) {
+  const parts = collectGenericText(content);
+  if (parts.length === 0) return null;
+  return `${labelize(type)}:\n${parts.map((part) => `- ${part}`).join("\n")}`;
+}
+
+function collectGenericText(value: unknown, key?: string): string[] {
+  if (value == null || (key && GENERIC_SKIP_KEYS.has(key))) return [];
+  if (typeof value === "string") {
+    const clean = stripHtml(value);
+    return clean ? [clean] : [];
+  }
+  if (typeof value === "number" || typeof value === "boolean") {
+    return [String(value)];
+  }
+  if (Array.isArray(value)) {
+    return value.flatMap((item) => collectGenericText(item));
+  }
+  if (typeof value === "object") {
+    return Object.entries(value as Record<string, unknown>).flatMap(
+      ([childKey, childValue]) => collectGenericText(childValue, childKey)
+    );
+  }
+  return [];
 }
 
 function str(v: unknown): string {
   return typeof v === "string" ? v : "";
+}
+
+function nonEmptyString(v: unknown): v is string {
+  return typeof v === "string" && v.length > 0;
 }
 
 function stringArray(v: unknown): string[] {
@@ -602,6 +802,10 @@ function isReadyToReveal(revealAt: string): boolean {
   const timestamp = new Date(revealAt).getTime();
   if (Number.isNaN(timestamp)) return true;
   return Date.now() >= timestamp;
+}
+
+function byOrderIndex<T extends { orderIndex: number }>(a: T, b: T) {
+  return a.orderIndex - b.orderIndex;
 }
 
 function stripHtml(html: string): string {

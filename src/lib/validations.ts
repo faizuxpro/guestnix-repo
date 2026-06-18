@@ -26,6 +26,7 @@ import { QUICK_VARIABLE_TYPES } from "@/lib/quick-variables";
 import { GUIDEBOOK_FAVICON_SOURCES } from "@/lib/guidebook-favicon";
 import { BOTTOM_NAV_MAX, BOTTOM_NAV_MIN } from "@/types/bottom-nav";
 import type { BlockType } from "@/types/blocks";
+import { heroDataPatchSchema } from "@/lib/hero-data";
 
 // ─── Properties ──────────────────────────────────────
 export const createPropertySchema = z.object({
@@ -477,6 +478,7 @@ export const updateGuidebookSchema = z.object({
       show_guestnix_branding: z.boolean().optional(),
     })
     .optional(),
+  heroData: heroDataPatchSchema.optional(),
   settings: z
     .object({
       custom_domain: z.string().nullable().optional(),

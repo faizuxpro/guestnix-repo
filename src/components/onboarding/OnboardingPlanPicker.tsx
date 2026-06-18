@@ -5,6 +5,9 @@ import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { Loader2, Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { GuidebookStartChoicePanel } from "@/components/dashboard/GuidebookMiniEditorModal";
+import { apiFetch } from "@/lib/api-fetch";
+import { toastApiError } from "@/lib/toast-error";
 import { cn } from "@/lib/utils";
 import {
   PLAN_KEYS,
@@ -26,6 +29,27 @@ export function OnboardingPlanPicker() {
   const [interval, setBillingInterval] = useState<BillingInterval>("month");
   const [plan, setPlan] = useState<PlanKey>("plus");
   const [loading, setLoading] = useState(false);
+  const [trialStarted, setTrialStarted] = useState(false);
+  const [creatingEditor, setCreatingEditor] = useState(false);
+
+  async function openAdvancedEditor() {
+    setCreatingEditor(true);
+    const result = await apiFetch<{ id: string }>("/api/guidebooks", {
+      method: "POST",
+      body: {
+        title: "Sunset Lake House Guide",
+        templateId: "sunset-lakehouse",
+      },
+    });
+    setCreatingEditor(false);
+
+    if (!result.ok) {
+      toastApiError(result.error, { title: "Couldn't create guidebook" });
+      return;
+    }
+
+    router.push(`/dashboard/guidebooks/${result.data.id}/editor`);
+  }
 
   async function startTrial() {
     setLoading(true);
@@ -45,12 +69,39 @@ export function OnboardingPlanPicker() {
         setLoading(false);
         return;
       }
-      router.push("/dashboard/guidebooks/new?source=onboarding");
-      router.refresh();
+      setTrialStarted(true);
+      setLoading(false);
     } catch {
       toast.error("Couldn't start your trial. Please try again.");
       setLoading(false);
     }
+  }
+
+  if (trialStarted) {
+    return (
+      <div className="min-h-screen bg-muted/30 px-4 py-12">
+        <div className="mx-auto max-w-5xl">
+          <div className="mb-6 text-center">
+            <h1 className="text-3xl font-bold tracking-tight">
+              Your trial is ready
+            </h1>
+            <p className="mt-2 text-muted-foreground">
+              Start your first guidebook now, or head to the dashboard.
+            </p>
+          </div>
+          <GuidebookStartChoicePanel
+            source="onboarding"
+            compact
+            creatingEditor={creatingEditor}
+            onQuickStart={() =>
+              router.push("/dashboard/guidebooks/new?source=onboarding")
+            }
+            onAdvancedEditor={() => void openAdvancedEditor()}
+            onCancel={() => router.push("/dashboard")}
+          />
+        </div>
+      </div>
+    );
   }
 
   return (
