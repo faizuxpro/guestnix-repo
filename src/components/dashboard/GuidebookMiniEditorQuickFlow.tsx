@@ -15,7 +15,11 @@ import {
   FileUp,
   Globe,
   ImageIcon,
+  Info,
+  LayoutDashboard,
   Loader2,
+  MapPin,
+  Navigation,
   Paintbrush,
   RefreshCcw,
   ShoppingBag,
@@ -43,6 +47,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { RuntimeFontLoader } from "@/components/fonts/RuntimeFontLoader";
 import { DESIGN_PRESETS, type DesignPreset } from "@/components/editor/design/presets";
 import { LanguageProvider } from "@/components/guidebook/LanguageContext";
@@ -233,6 +238,18 @@ function nonEmptyRecord(values: Record<string, string>) {
 
 function compactLocation(parts: Array<string | null | undefined>) {
   return parts.map((part) => part?.trim()).filter(Boolean).join(", ");
+}
+
+function parseCoordinates(input: string) {
+  const trimmed = input.trim();
+  const regex =
+    /^[-+]?([1-8]?\d(\.\d+)?|90(\.0+)?),\s*[-+]?(180(\.0+)?|((1[0-7]\d)|([1-9]?\d))(\.\d+)?)$/;
+  if (!regex.test(trimmed)) return null;
+  const [latRaw, lngRaw] = trimmed.split(",");
+  const lat = Number(latRaw.trim());
+  const lng = Number(lngRaw.trim());
+  if (!Number.isFinite(lat) || !Number.isFinite(lng)) return null;
+  return { lat, lng };
 }
 
 function priceToCents(value: string) {
@@ -610,6 +627,7 @@ export function GuidebookMiniEditorQuickFlow({
   const [discoverQuery, setDiscoverQuery] = useState("");
   const [discoverRadius, setDiscoverRadius] = useState("3");
   const [discovering, setDiscovering] = useState(false);
+  const [isDetectingLocation, setIsDetectingLocation] = useState(false);
   const [placeCategories, setPlaceCategories] = useState<PlaceCategory[]>(
     DEFAULT_PLACE_CATEGORIES
   );
@@ -655,6 +673,9 @@ export function GuidebookMiniEditorQuickFlow({
   const currentStorePriceCents = priceToCents(storeItemPrice);
   const editorHref = guidebookId
     ? `/dashboard/guidebooks/${guidebookId}/editor`
+    : null;
+  const dashboardHref = guidebookId
+    ? `/dashboard/guidebooks/${guidebookId}`
     : null;
   const activeIndex = stepIndex(step);
 
@@ -1101,6 +1122,31 @@ export function GuidebookMiniEditorQuickFlow({
     if (pick) void applyStylePreset(pick);
   }
 
+  async function detectCurrentLocation() {
+    if (!navigator.geolocation) {
+      toast.error("Geolocation is not available in this browser.");
+      return;
+    }
+
+    setIsDetectingLocation(true);
+    try {
+      const position = await new Promise<GeolocationPosition>((resolve, reject) => {
+        navigator.geolocation.getCurrentPosition(resolve, reject, {
+          enableHighAccuracy: true,
+          timeout: 12000,
+          maximumAge: 0,
+        });
+      });
+      const label = `${position.coords.latitude.toFixed(4)}, ${position.coords.longitude.toFixed(4)}`;
+      setDiscoverQuery(label);
+      toast.success("Current location selected");
+    } catch {
+      toast.error("Could not detect location.");
+    } finally {
+      setIsDetectingLocation(false);
+    }
+  }
+
   async function discoverPlaces() {
     const id = await saveCurrentSetup();
     if (!id) return;
@@ -1108,16 +1154,20 @@ export function GuidebookMiniEditorQuickFlow({
     setDiscovering(true);
     try {
       const query = discoverQuery.trim() || resolvedLocation || propertyDisplayName;
+      const coords = parseCoordinates(query);
+      const body = {
+        radiusMiles: Number(discoverRadius) || 3,
+        limit: 40,
+        categories: placeCategories,
+        ...(coords
+          ? { lat: coords.lat, lng: coords.lng }
+          : { locationQuery: query }),
+      };
       const result = await apiFetch<{
         places: DiscoveredPlace[];
       }>(`/api/guidebooks/${id}/places/discover`, {
         method: "POST",
-        body: {
-          locationQuery: query,
-          radiusMiles: Number(discoverRadius) || 3,
-          limit: 40,
-          categories: placeCategories,
-        },
+        body,
       });
 
       if (!result.ok) {
@@ -1516,6 +1566,8 @@ export function GuidebookMiniEditorQuickFlow({
                   categories={placeCategories}
                   toggleCategory={toggleCategory}
                   discovering={discovering}
+                  isDetectingLocation={isDetectingLocation}
+                  detectCurrentLocation={detectCurrentLocation}
                   discoverPlaces={discoverPlaces}
                   places={discoveredPlaces}
                   selectedIds={selectedPlaceIds}
@@ -1577,10 +1629,18 @@ export function GuidebookMiniEditorQuickFlow({
                 </Button>
               ) : null}
               {step === "publish" && publicUrl ? (
-                <Button render={<Link href={publicUrl} target="_blank" rel="noopener" />}>
-                  <ExternalLink className="h-4 w-4" />
-                  View live
-                </Button>
+                <>
+                  {dashboardHref ? (
+                    <Button variant="outline" render={<Link href={dashboardHref} />}>
+                      <LayoutDashboard className="h-4 w-4" />
+                      Go to dashboard
+                    </Button>
+                  ) : null}
+                  <Button render={<Link href={publicUrl} target="_blank" rel="noopener" />}>
+                    <ExternalLink className="h-4 w-4" />
+                    View live
+                  </Button>
+                </>
               ) : (
                 <Button onClick={() => void goNext()} disabled={saving || publishing || discovering}>
                   {saving || publishing ? (
@@ -2269,6 +2329,67 @@ function TemplateStep(props: {
   );
 }
 
+function CoordinatesHelpPopover({ className }: { className?: string }) {
+  return (
+    <Popover>
+      <PopoverTrigger
+        render={
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon-sm"
+            className={cn(
+              "h-8 w-8 shrink-0 rounded-md border border-primary/20 bg-primary/10 text-primary shadow-sm hover:border-primary/35 hover:bg-primary/15",
+              className
+            )}
+            aria-label="How to use precise map coordinates"
+          />
+        }
+      >
+        <Info className="h-4 w-4" aria-hidden />
+      </PopoverTrigger>
+      <PopoverContent
+        align="start"
+        side="bottom"
+        sideOffset={8}
+        className="w-[min(380px,calc(100vw-24px))] gap-0 overflow-hidden rounded-xl border border-primary/20 bg-background p-0 text-left shadow-xl ring-1 ring-primary/10"
+      >
+        <div className="border-b border-border/70 bg-primary/5 px-3.5 py-3">
+          <div className="flex items-start gap-2.5">
+            <span className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-sm">
+              <MapPin className="h-4 w-4" aria-hidden />
+            </span>
+            <div className="min-w-0">
+              <p className="text-sm font-semibold leading-tight text-foreground">
+                Precise property pin
+              </p>
+              <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
+                Use coordinates for the precise, exact location pin of your
+                property.
+              </p>
+            </div>
+          </div>
+        </div>
+        <div className="space-y-3 p-3.5">
+          <p className="text-xs leading-relaxed text-muted-foreground">
+            Go to Google Maps and right-click your place. A dropdown appears
+            with the coordinates at the top. Copy them and paste them here.
+          </p>
+          <div className="overflow-hidden rounded-lg border border-border/70 bg-muted/25 shadow-sm">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src="/help/google-maps-coordinates-help.svg"
+              alt="Google Maps menu showing coordinates at the top after right-clicking a place."
+              className="block aspect-[843/793] w-full object-cover"
+              loading="lazy"
+            />
+          </div>
+        </div>
+      </PopoverContent>
+    </Popover>
+  );
+}
+
 function PlacesStep(props: {
   query: string;
   setQuery: (value: string) => void;
@@ -2278,6 +2399,8 @@ function PlacesStep(props: {
   categories: PlaceCategory[];
   toggleCategory: (category: PlaceCategory) => void;
   discovering: boolean;
+  isDetectingLocation: boolean;
+  detectCurrentLocation: () => void;
   discoverPlaces: () => void;
   places: DiscoveredPlace[];
   selectedIds: Set<string>;
@@ -2289,31 +2412,69 @@ function PlacesStep(props: {
         eyebrow="Step 4 of 6"
         title="Local spots"
       />
-      <div className="grid gap-4 md:grid-cols-[1fr_140px_auto] md:items-end">
-        <Field label="Search location" hint={props.fallbackQuery ? `Default: ${props.fallbackQuery}` : undefined}>
-          <Input
-            value={props.query}
-            onChange={(event) => props.setQuery(event.target.value)}
-            placeholder="City, address, or neighborhood"
-          />
-        </Field>
-        <Field label="Radius">
-          <Select value={props.radius} onValueChange={(value) => props.setRadius(value ?? "3")}>
-            <SelectTrigger className="h-10 w-full">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="1">1 mile</SelectItem>
-              <SelectItem value="3">3 miles</SelectItem>
-              <SelectItem value="5">5 miles</SelectItem>
-              <SelectItem value="10">10 miles</SelectItem>
-            </SelectContent>
-          </Select>
-        </Field>
-        <Button onClick={() => void props.discoverPlaces()} disabled={props.discovering}>
-          {props.discovering ? <Loader2 className="h-4 w-4 animate-spin" /> : <Compass className="h-4 w-4" />}
-          {props.discovering ? "Discovering" : "Discover"}
-        </Button>
+      <div className="rounded-xl border border-border/80 bg-muted/20 p-3">
+        <div className="grid gap-3 lg:grid-cols-[minmax(260px,1fr)_auto_140px_auto] lg:items-end">
+          <Field label="Search location">
+            <div className="relative">
+              <MapPin className="pointer-events-none absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
+              <Input
+                value={props.query}
+                onChange={(event) => props.setQuery(event.target.value)}
+                placeholder="City, address, neighborhood, or lat,lng"
+                className="h-10 pl-9 pr-11"
+              />
+              <CoordinatesHelpPopover className="absolute right-1 top-1/2 h-7 w-7 -translate-y-1/2 border-transparent bg-muted/60 shadow-none hover:bg-muted" />
+            </div>
+          </Field>
+          <Field label="Location">
+            <Button
+              type="button"
+              variant="outline"
+              className="h-10 w-full whitespace-nowrap px-3 lg:w-auto"
+              onClick={() => void props.detectCurrentLocation()}
+              disabled={props.isDetectingLocation}
+              aria-label="Use current location"
+            >
+              {props.isDetectingLocation ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <Navigation className="h-4 w-4" />
+              )}
+              Current location
+            </Button>
+          </Field>
+          <Field label="Radius">
+            <Select value={props.radius} onValueChange={(value) => props.setRadius(value ?? "3")}>
+              <SelectTrigger className="h-10 w-full">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="1">1 mile</SelectItem>
+                <SelectItem value="3">3 miles</SelectItem>
+                <SelectItem value="5">5 miles</SelectItem>
+                <SelectItem value="10">10 miles</SelectItem>
+              </SelectContent>
+            </Select>
+          </Field>
+          <Button
+            type="button"
+            className="h-10 w-full whitespace-nowrap lg:w-auto"
+            onClick={() => void props.discoverPlaces()}
+            disabled={props.discovering}
+          >
+            {props.discovering ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              <Compass className="h-4 w-4" />
+            )}
+            {props.discovering ? "Discovering" : "Discover"}
+          </Button>
+        </div>
+        {props.fallbackQuery ? (
+          <p className="mt-2 text-xs text-muted-foreground">
+            Default: {props.fallbackQuery}
+          </p>
+        ) : null}
       </div>
 
       <div className="mt-4 flex flex-wrap gap-2">
