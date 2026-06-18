@@ -12,6 +12,8 @@ const trustItems = [
   "Works on every device",
 ] as const;
 
+const DEMO_URL = "/demo/sunset-template";
+
 const heroMessagePairs = [
   {
     question: "What's the WiFi password?",
@@ -360,7 +362,7 @@ export function LandingHeroSection() {
               Start Your Free Trial
               <ArrowRight size={18} aria-hidden />
             </Link>
-            <Link href="#demo" className="landing-btn landing-btn-ghost">
+            <Link href={DEMO_URL} className="landing-btn landing-btn-ghost">
               See a Live Demo
             </Link>
           </div>

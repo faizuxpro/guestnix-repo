@@ -2913,82 +2913,147 @@ function RequestProgressPanel({
         </div>
         <RequestStatusBadge status={request.status} />
       </div>
-      <ol className="grid gap-4 p-4 md:grid-cols-5 md:gap-0">
-        {steps.map((step, index) => {
-          const state = step.blocked
-            ? "blocked"
-            : step.complete
-              ? "complete"
-              : step.active
-                ? "active"
-                : index === nextIndex
-                  ? "next"
-                  : "pending";
-          const stateLabel =
-            state === "complete"
-              ? "Done"
-              : state === "active"
-                ? "Current"
-                : state === "next"
-                  ? "Next"
-                  : state === "blocked"
-                  ? "Stopped"
-                  : "Waiting";
-          return (
-            <li
-              key={step.label}
-              className="relative grid grid-cols-[28px_minmax(0,1fr)] gap-3 md:block md:pr-4"
-            >
-              {index < steps.length - 1 ? (
-                <span
-                  className={cn(
-                    "absolute bottom-[-1rem] left-[13px] top-8 w-px bg-border md:bottom-auto md:left-7 md:right-0 md:top-3.5 md:h-px md:w-auto",
-                    state === "complete" && "bg-primary/35",
-                    state === "active" && "bg-amber-300"
-                  )}
-                  aria-hidden
-                />
-              ) : null}
-              <span
-                className={cn(
-                  "relative z-10 grid h-7 w-7 place-items-center rounded-full border bg-background",
-                  state === "complete" &&
-                    "border-emerald-300 bg-emerald-50 text-emerald-700 dark:border-emerald-500/40 dark:bg-emerald-500/10 dark:text-emerald-100",
-                  state === "active" &&
-                    "border-amber-300 bg-amber-50 text-amber-800 ring-4 ring-amber-100 dark:border-amber-500/40 dark:bg-amber-500/10 dark:text-amber-100 dark:ring-amber-500/10",
-                  state === "blocked" &&
-                    "border-border bg-muted text-muted-foreground",
-                  state === "next" &&
-                    "border-primary/30 bg-primary/5 text-primary",
-                  state === "pending" && "border-border bg-muted/30 text-muted-foreground"
-                )}
+      <div className="bg-background">
+        <ol className="grid bg-background md:grid-cols-5">
+          {steps.map((step, index) => {
+            const state = step.blocked
+              ? "blocked"
+              : step.complete
+                ? "complete"
+                : step.active
+                  ? "active"
+                  : index === nextIndex
+                    ? "next"
+                    : "pending";
+            const stateLabel =
+              state === "complete"
+                ? "Done"
+                : state === "active"
+                  ? "Current"
+                  : state === "next"
+                    ? "Next"
+                    : state === "blocked"
+                    ? "Stopped"
+                    : "Waiting";
+            const nodeSurface =
+              state === "complete"
+                ? "border-[#042129] bg-[#042129] text-white dark:border-[#062936] dark:bg-[#062936] dark:text-[#f6f1eb]"
+                : state === "active"
+                  ? "border-[#ccefd8] bg-[#eafcf0] text-[#042129] dark:border-[#6fef8b]/25 dark:bg-[#6fef8b]/15 dark:text-[#eaffef]"
+                  : state === "next"
+                    ? "border-primary/20 bg-primary/5 text-primary"
+                    : state === "blocked"
+                      ? "border-border bg-muted text-muted-foreground opacity-80"
+                      : "border-border/80 bg-background text-foreground opacity-65";
+            const arrowSurface =
+              state === "complete"
+                ? "border-border/70 bg-[#042129] md:border-[#042129] dark:bg-[#062936] md:dark:border-[#062936]"
+                : state === "active"
+                  ? "border-border/70 bg-[#eafcf0] md:border-[#ccefd8] dark:bg-[#143a2b] md:dark:border-[#6fef8b]/25"
+                  : state === "next"
+                    ? "border-border/70 bg-primary/5 md:border-primary/20"
+                    : state === "blocked"
+                      ? "border-border bg-muted"
+                      : "border-border/80 bg-background";
+            return (
+              <li
+                key={step.label}
+                aria-current={state === "active" ? "step" : undefined}
+                className="relative flex min-w-0 border-b border-border/70 last:border-b-0 md:-ml-px md:block md:border-b-0 first:md:ml-0"
+                style={{ zIndex: steps.length - index }}
               >
-                {state === "complete" ? (
-                  <CheckCircle2 className="h-4 w-4" />
-                ) : state === "blocked" ? (
-                  <XCircle className="h-4 w-4" />
-                ) : (
-                  <Circle className="h-4 w-4" />
-                )}
-              </span>
-              <div className="min-w-0 md:mt-3">
-                <p className="text-[11px] font-semibold uppercase text-muted-foreground">
-                  {stateLabel}
-                </p>
-                <p className="mt-1 text-sm font-semibold">{step.label}</p>
-                <p className="mt-1 text-xs leading-5 text-muted-foreground">
-                  {step.description}
-                </p>
-                {stepTimes[index] ? (
-                  <p className="mt-2 text-[11px] font-medium text-muted-foreground">
-                    {stepTimes[index]}
-                  </p>
-                ) : null}
-              </div>
-            </li>
-          );
-        })}
-      </ol>
+                <div
+                  className={cn(
+                    "relative flex min-h-[104px] w-[132px] shrink-0 flex-col items-center justify-center border-r px-3 pb-4 pt-6 text-center transition-colors duration-300 md:grid md:min-h-[88px] md:w-auto md:grid-cols-[1.75rem_minmax(0,1fr)] md:items-center md:gap-2 md:border-y md:border-r md:py-4 md:pl-3 md:pr-6 md:text-left",
+                    nodeSurface,
+                    index === 0 && "md:border-l",
+                    index === steps.length - 1 &&
+                      "rounded-bl-md md:rounded-none md:pr-4"
+                  )}
+                >
+                  {index < steps.length - 1 ? (
+                    <span
+                      className={cn(
+                        "absolute bottom-0 left-1/2 z-20 h-3 w-3 -translate-x-1/2 translate-y-1/2 rotate-45 border-b border-r transition-colors duration-300 md:bottom-auto md:left-auto md:right-0 md:top-1/2 md:translate-x-1/2 md:-translate-y-1/2 md:-rotate-45",
+                        arrowSurface
+                      )}
+                      aria-hidden
+                    />
+                  ) : null}
+                  <span
+                    className={cn(
+                      "relative z-30 mb-2 grid h-6 w-6 shrink-0 place-items-center text-[1.55rem] font-light leading-none transition-all duration-300 md:mb-0 md:h-7 md:w-7 md:justify-self-start",
+                      state === "complete" && "text-[#6fef8b]",
+                      state === "active" &&
+                        "scale-105 font-medium text-[#042129] dark:text-[#6fef8b]",
+                      state === "blocked" && "text-muted-foreground",
+                      state === "next" && "text-primary",
+                      state === "pending" && "text-muted-foreground"
+                    )}
+                  >
+                    {state === "complete" ? (
+                      <CheckCircle2 className="h-5 w-5" />
+                    ) : state === "blocked" ? (
+                      <XCircle className="h-5 w-5" />
+                    ) : (
+                      index + 1
+                    )}
+                  </span>
+                  <div
+                    className={cn(
+                      "relative z-30 min-w-0 w-full transition-transform duration-300 md:w-auto",
+                      state === "active" && "md:translate-x-0.5"
+                    )}
+                  >
+                    <p
+                      className={cn(
+                        "text-[10px] font-bold uppercase tracking-[0.05em]",
+                        state === "complete"
+                          ? "text-[#6fef8b]/80"
+                          : state === "active"
+                            ? "text-[#042129]/70 dark:text-[#6fef8b]/85"
+                            : "text-muted-foreground"
+                      )}
+                    >
+                      {stateLabel}
+                    </p>
+                    <p
+                      className={cn(
+                        "mt-0.5 text-sm font-bold leading-tight",
+                        state === "complete" && "text-white dark:text-[#f6f1eb]"
+                      )}
+                    >
+                      {step.label}
+                    </p>
+                  </div>
+                </div>
+                <div className="flex min-w-0 flex-1 items-center px-4 py-3 md:block md:px-5 md:py-3.5">
+                  <div className="min-w-0">
+                    <p
+                      className={cn(
+                        "text-xs leading-5 transition-colors duration-300 md:text-[0.8rem]",
+                        state === "complete"
+                          ? "font-medium text-[#042129] dark:text-[#6fef8b]"
+                          : state === "active"
+                            ? "text-[#042129] dark:text-[#eaffef]"
+                            : "text-muted-foreground",
+                        (state === "pending" || state === "blocked") && "opacity-75"
+                      )}
+                    >
+                      {step.description}
+                    </p>
+                    {stepTimes[index] ? (
+                      <p className="mt-1.5 text-[11px] font-medium text-muted-foreground">
+                        {stepTimes[index]}
+                      </p>
+                    ) : null}
+                  </div>
+                </div>
+              </li>
+            );
+          })}
+        </ol>
+      </div>
       <div className={cn("border-t border-border/70 p-4", actionToneClasses(action.tone))}>
         <div className="flex items-start gap-3">
           <AlertCircle className="mt-0.5 h-5 w-5 shrink-0" />

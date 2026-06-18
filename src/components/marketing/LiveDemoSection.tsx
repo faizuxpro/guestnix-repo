@@ -8,7 +8,7 @@ import { MaterialIcon } from "./ui/MaterialIcon";
 import { ComingSoonDialog } from "./ui/ComingSoonDialog";
 
 type Demo = {
-  slug: "demo-sunset" | "demo-cabin" | "demo-flat";
+  slug: "sunset-template" | "demo-cabin" | "demo-flat";
   name: string;
   location: string;
   badge: string;
@@ -20,7 +20,7 @@ type Demo = {
 
 const DEMOS: Demo[] = [
   {
-    slug: "demo-sunset",
+    slug: "sunset-template",
     name: "Oceanview Villa",
     location: "Malibu, California",
     badge: "Villa",

@@ -31,7 +31,6 @@ import {
   GuidebookCard,
   type GuidebookData,
 } from "@/components/dashboard/GuidebookCard";
-import { NewGuidebookDialog } from "@/components/dashboard/NewGuidebookDialog";
 import { QuickVariablesManager } from "@/components/dashboard/QuickVariablesManager";
 import { toast } from "sonner";
 import { apiFetch } from "@/lib/api-fetch";
@@ -122,7 +121,6 @@ function GuidebooksContent() {
   const openCreateOnLoad = searchParams.get("new") === "1";
   const [guidebooks, setGuidebooks] = useState<GuidebookData[]>([]);
   const [loading, setLoading] = useState(true);
-  const [dialogOpen, setDialogOpen] = useState(openCreateOnLoad);
   const [tab, setTab] = useState<TabKey>("all");
   const [autoSelectedShared, setAutoSelectedShared] = useState(false);
   const [query, setQuery] = useState("");
@@ -148,12 +146,18 @@ function GuidebooksContent() {
   }, []);
 
   useEffect(() => {
+    if (openCreateOnLoad) {
+      const query = propertyFilterId ? `?property=${propertyFilterId}` : "";
+      router.replace(`/dashboard/guidebooks/new${query}`);
+      return;
+    }
+
     const timer = window.setTimeout(() => {
       void fetchGuidebooks();
     }, 0);
 
     return () => window.clearTimeout(timer);
-  }, [fetchGuidebooks]);
+  }, [fetchGuidebooks, openCreateOnLoad, propertyFilterId, router]);
 
   const scopedGuidebooks = useMemo(() => {
     if (!propertyFilterId) return guidebooks;
@@ -338,9 +342,9 @@ function GuidebooksContent() {
     void fetchGuidebooks();
   }
 
-  function handleCreated(id: string) {
-    void fetchGuidebooks();
-    router.push(`/dashboard/guidebooks/${id}/editor`);
+  function openGuidebookOnboarding() {
+    const query = propertyFilterId ? `?property=${propertyFilterId}` : "";
+    router.push(`/dashboard/guidebooks/new${query}`);
   }
 
   function handleOpenQuickVariables(guidebook: GuidebookData) {
@@ -417,7 +421,7 @@ function GuidebooksContent() {
             )}
           </p>
         </div>
-        <Button onClick={() => setDialogOpen(true)}>
+        <Button onClick={openGuidebookOnboarding}>
           <Plus className="mr-2 h-4 w-4" />
           New Guidebook
         </Button>
@@ -449,7 +453,7 @@ function GuidebooksContent() {
             <p className="mb-4 max-w-sm text-sm text-muted-foreground">
               Create your first digital guidebook and share it with your guests.
             </p>
-            <Button onClick={() => setDialogOpen(true)}>
+            <Button onClick={openGuidebookOnboarding}>
               <Plus className="mr-2 h-4 w-4" />
               Create Guidebook
             </Button>
@@ -505,7 +509,7 @@ function GuidebooksContent() {
                   {getEmptyMessage()}
                 </p>
                 {hasPropertyFilter && !hasScopedGuidebooks && (
-                  <Button className="mt-4" onClick={() => setDialogOpen(true)}>
+                  <Button className="mt-4" onClick={openGuidebookOnboarding}>
                     <Plus className="mr-2 h-4 w-4" />
                     New Guidebook
                   </Button>
@@ -530,12 +534,6 @@ function GuidebooksContent() {
         </>
       )}
 
-      <NewGuidebookDialog
-        open={dialogOpen}
-        onOpenChange={setDialogOpen}
-        onCreated={handleCreated}
-        initialPropertyId={propertyFilterId || undefined}
-      />
       {quickVariablesGuidebook ? (
         <QuickVariablesManager
           key={quickVariablesGuidebook.id}

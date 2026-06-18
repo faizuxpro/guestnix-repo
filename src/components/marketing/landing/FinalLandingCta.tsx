@@ -7,6 +7,8 @@ const trust = [
   "Full feature access during beta",
 ] as const;
 
+const DEMO_URL = "/demo/sunset-template";
+
 export function FinalLandingCta() {
   return (
     <section className="landing-section is-tight-top">
@@ -26,8 +28,8 @@ export function FinalLandingCta() {
               Create Your Free Guidebook
               <ArrowRight size={18} aria-hidden />
             </Link>
-            <Link href="#demo" className="landing-btn landing-btn-dark-ghost">
-              Book a Demo
+            <Link href={DEMO_URL} className="landing-btn landing-btn-dark-ghost">
+              See a Live Demo
             </Link>
           </div>
           <ul>

@@ -11,6 +11,8 @@ import {
 import { Button } from "@/components/ui/button";
 import { GradientButton } from "./GradientButton";
 
+const DEMO_URL = "/demo/sunset-template";
+
 type Props = {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -33,7 +35,7 @@ export function ComingSoonDialog({ open, onOpenChange, propertyName }: Props) {
           <Button
             variant="outline"
             size="sm"
-            render={<Link href="/demo/demo-sunset" />}
+            render={<Link href={DEMO_URL} />}
             className="flex-1"
           >
             See Oceanview Villa demo

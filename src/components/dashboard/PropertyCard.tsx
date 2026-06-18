@@ -153,7 +153,7 @@ export function PropertyCard({ property, onEdit, onDelete }: PropertyCardProps) 
             size="sm"
             render={
               <Link
-                href={`/dashboard/guidebooks?property=${property.id}&new=1`}
+                href={`/dashboard/guidebooks/new?property=${property.id}`}
               />
             }
           >

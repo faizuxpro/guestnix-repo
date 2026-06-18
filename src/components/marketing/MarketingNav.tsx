@@ -21,9 +21,11 @@ import { cn } from "@/lib/utils";
 import { GradientButton } from "./ui/GradientButton";
 import { BrandLockup } from "@/components/brand/BrandLockup";
 
+const DEMO_URL = "/demo/sunset-template";
+
 const PRIMARY_LINKS = [
   { href: "#features", label: "Features" },
-  { href: "#demo", label: "Live demo" },
+  { href: DEMO_URL, label: "Live demo" },
   { href: "/pricing", label: "Pricing" },
   { href: "/blog", label: "Resources" },
 ] as const;
@@ -64,7 +66,7 @@ const PRODUCT_ITEMS = [
   {
     title: "Local Map",
     body: "Curate nearby restaurants, attractions, essentials, and custom host picks.",
-    href: "#demo",
+    href: DEMO_URL,
     badge: "Guest-ready map",
     accent: "accent-coral",
     icon: MapPinned,
@@ -318,7 +320,7 @@ export function MarketingNav() {
             <div className="overflow-hidden rounded-2xl border border-white/30 bg-[#f9fbfa] p-3 text-[color:var(--gn-dark)] shadow-[0_24px_58px_rgba(4,33,41,0.22)] ring-1 ring-black/[0.03]">
               <div className="grid grid-cols-[390px_minmax(0,1fr)] gap-4">
                 <Link
-                  href="#demo"
+                  href={DEMO_URL}
                   onClick={() => setProductOpen(false)}
                   className="group relative min-h-[315px] self-stretch overflow-hidden rounded-xl bg-[color:var(--c-bl-bg)] text-white"
                 >

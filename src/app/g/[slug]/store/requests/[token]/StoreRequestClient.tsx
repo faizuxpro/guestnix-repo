@@ -787,8 +787,8 @@ function ProgressTracker({ request }: { request: StoreRequestDetail }) {
   const steps = progressSteps(request);
 
   return (
-    <section className="rounded-lg border border-black/10 bg-white p-4">
-      <div className="flex flex-wrap items-center justify-between gap-2">
+    <section className="overflow-hidden rounded-lg border border-black/10 bg-white">
+      <div className="flex flex-wrap items-center justify-between gap-2 border-b border-black/10 px-4 py-3">
         <h2 className="text-sm font-bold uppercase tracking-[0.1em] text-neutral-500">
           Request progress
         </h2>
@@ -796,7 +796,7 @@ function ProgressTracker({ request }: { request: StoreRequestDetail }) {
           Updates live on this page
         </span>
       </div>
-      <div className="mt-4 grid gap-3">
+      <ol className="grid bg-white">
         {steps.map((step, index) => {
           const state = step.blocked
             ? "blocked"
@@ -813,59 +813,93 @@ function ProgressTracker({ request }: { request: StoreRequestDetail }) {
                 : state === "blocked"
                   ? "Stopped"
                   : "Waiting";
+          const nodeSurface =
+            state === "complete"
+              ? "border-[#162522] bg-[#162522] text-white"
+              : state === "active"
+                ? "border-[#d9a64a]/45 bg-[#fff8e9] text-[#162522]"
+                : state === "blocked"
+                  ? "border-red-100 bg-red-50 text-red-800"
+                  : "border-black/10 bg-[#fbfaf7] text-neutral-700";
+          const arrowSurface =
+            state === "complete"
+              ? "border-white/45 bg-[#162522]"
+              : state === "active"
+                ? "border-[#d9a64a]/45 bg-[#fff8e9]"
+                : state === "blocked"
+                  ? "border-red-100 bg-red-50"
+                  : "border-black/10 bg-[#fbfaf7]";
           return (
-            <div
+            <li
               key={step.label}
-              className="grid grid-cols-[32px_minmax(0,1fr)] gap-3"
               aria-current={state === "active" ? "step" : undefined}
+              className="relative flex min-w-0 border-b border-black/10 last:border-b-0"
+              style={{ zIndex: steps.length - index }}
             >
-              <div className="grid justify-items-center">
+              <div
+                className={`relative flex min-h-[112px] w-[136px] shrink-0 flex-col items-center justify-center border-r px-3 pb-4 pt-6 text-center transition-colors duration-300 sm:w-[148px] ${nodeSurface}`}
+              >
+                {index < steps.length - 1 ? (
+                  <span
+                    className={`absolute bottom-0 left-1/2 z-20 h-3 w-3 -translate-x-1/2 translate-y-1/2 rotate-45 border-b border-r transition-colors duration-300 ${arrowSurface}`}
+                    aria-hidden
+                  />
+                ) : null}
                 <span
-                  className={`grid h-8 w-8 place-items-center rounded-full text-xs font-bold ${
+                  className={`relative z-30 mb-2 grid h-7 w-7 shrink-0 place-items-center text-[1.65rem] font-light leading-none transition-all duration-300 ${
                     state === "complete"
-                      ? "bg-[#162522] text-white"
+                      ? "text-white"
                       : state === "active"
-                        ? "bg-[#b5812f] text-white"
+                        ? "font-medium text-[#b5812f]"
                         : state === "blocked"
-                          ? "bg-red-100 text-red-700"
-                          : "bg-[#e8e0d3] text-neutral-500"
+                          ? "text-red-700"
+                          : "text-neutral-500"
                   }`}
                 >
                   {state === "complete" ? (
-                    <CheckCircle2 className="h-4 w-4" />
+                    <CheckCircle2 className="h-5 w-5" />
                   ) : state === "blocked" ? (
-                    <XCircle className="h-4 w-4" />
+                    <XCircle className="h-5 w-5" />
                   ) : (
                     index + 1
                   )}
                 </span>
-                {index < steps.length - 1 ? (
-                  <span className="h-full min-h-7 w-px bg-black/10" />
-                ) : null}
-              </div>
-              <div
-                className={`rounded-md border p-3 ${
-                  state === "active"
-                    ? "border-[#d9a64a]/45 bg-[#fff8e9]"
-                    : state === "blocked"
-                      ? "border-red-100 bg-red-50"
-                      : "border-black/10 bg-[#fbfaf7]"
-                }`}
-              >
-                <div className="flex flex-wrap items-center justify-between gap-2">
-                  <p className="text-sm font-semibold">{step.label}</p>
-                  <span className="rounded-full bg-white px-2 py-0.5 text-[11px] font-bold uppercase tracking-[0.08em] text-neutral-500">
+                <div className="relative z-30 w-full min-w-0">
+                  <p
+                    className={`text-[10px] font-bold uppercase tracking-[0.08em] ${
+                      state === "complete"
+                        ? "text-white/75"
+                        : state === "active"
+                          ? "text-[#b5812f]"
+                          : state === "blocked"
+                            ? "text-red-700/80"
+                            : "text-neutral-500"
+                    }`}
+                  >
                     {stateLabel}
-                  </span>
+                  </p>
+                  <p className="mt-0.5 text-sm font-bold leading-tight">
+                    {step.label}
+                  </p>
                 </div>
-                <p className="mt-0.5 text-xs leading-5 text-neutral-600">
+              </div>
+              <div className="flex min-w-0 flex-1 items-center px-5 py-4">
+                <p
+                  className={`text-sm leading-6 ${
+                    state === "active"
+                      ? "font-medium text-[#162522]"
+                      : state === "blocked"
+                        ? "text-red-800"
+                        : "text-neutral-600"
+                  }`}
+                >
                   {step.description}
                 </p>
               </div>
-            </div>
+            </li>
           );
         })}
-      </div>
+      </ol>
     </section>
   );
 }

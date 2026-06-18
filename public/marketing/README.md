@@ -6,15 +6,15 @@ The images in `hero-screens/` and `templates/` are generated placeholders (color
 
 5 PNGs, portrait 780×1688 (iPhone 14 viewport @ 2x). Captured from the actual Guestnix product.
 
-- `01-welcome.png` — Hero/welcome view of `/g/demo-sunset`
+- `01-welcome.png` — Hero/welcome view of `/demo/sunset-template`
 - `02-wifi.png` — Wi-Fi section popup
 - `03-checkin.png` — Check-in section popup
 - `04-places.png` — Places/map section
 - `05-ai-chat.png` — AI chat widget open with a conversation
 
 **How to capture:**
-1. Seed `demo-sunset` if not already: `npx tsx scripts/seed-demo-sunset.ts`
-2. `npm run dev`, open `http://localhost:3000/g/demo-sunset`
+1. Seed `sunset-template` if not already: `npx tsx scripts/seed-demo-sunset.ts`
+2. `npm run dev`, open `http://localhost:3000/demo/sunset-template`
 3. Chrome DevTools → device toolbar → 390×844 (iPhone 14) at 2× pixel ratio
 4. Screenshot each section, save at 780×1688 as PNG
 5. Overwrite the files here

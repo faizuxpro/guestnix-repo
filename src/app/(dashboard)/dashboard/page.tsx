@@ -1443,7 +1443,7 @@ export default async function DashboardPage() {
       : commandGuidebooks.length === 0
         ? {
             label: "Create guidebook",
-            href: "/dashboard/guidebooks?new=1",
+            href: "/dashboard/guidebooks/new",
             icon: BookOpen,
           }
         : needsReplyCount > 0
@@ -2228,7 +2228,7 @@ export default async function DashboardPage() {
               icon={BookOpen}
               title="Create your first guidebook"
               body="Start with a property guide, publish it, then share the live link with guests."
-              action={{ label: "New guidebook", href: "/dashboard/guidebooks?new=1" }}
+              action={{ label: "New guidebook", href: "/dashboard/guidebooks/new" }}
             />
           ) : (
             <div>{topGuidebooks.map((guidebook) => <GuidebookListRow key={guidebook.id} guidebook={guidebook} />)}</div>

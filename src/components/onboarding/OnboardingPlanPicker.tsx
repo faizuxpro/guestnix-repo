@@ -45,7 +45,7 @@ export function OnboardingPlanPicker() {
         setLoading(false);
         return;
       }
-      router.push("/dashboard");
+      router.push("/dashboard/guidebooks/new?source=onboarding");
       router.refresh();
     } catch {
       toast.error("Couldn't start your trial. Please try again.");

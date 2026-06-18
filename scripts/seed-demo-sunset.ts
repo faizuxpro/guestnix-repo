@@ -1,5 +1,5 @@
 /**
- * Seeds or updates the /demo/demo-sunset demo guidebook.
+ * Seeds or updates the /demo/sunset-template demo guidebook.
  * Idempotent: safe to re-run. Uses the sunset-lakehouse seed content.
  *
  * Usage: npx tsx scripts/seed-demo-sunset.ts
@@ -25,7 +25,7 @@ import {
 } from "@/templates/sunset-lakehouse/seed";
 
 const DEMO_EMAIL = "demo@guestnix.internal";
-const DEMO_SLUG = "demo-sunset";
+const DEMO_SLUG = "sunset-template";
 const DEMO_TITLE = "Oceanview Villa";
 
 async function ensureDemoUser(): Promise<string> {

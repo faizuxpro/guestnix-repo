@@ -19,7 +19,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Loader2 } from "lucide-react";
+import { ExternalLink, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { apiFetch } from "@/lib/api-fetch";
 import { toastApiError } from "@/lib/toast-error";
@@ -34,16 +34,20 @@ const TEMPLATES = [
     id: "sunset-lakehouse",
     name: "Sunset Lakehouse",
     description: "Warm, inviting design perfect for vacation homes",
+    active: true,
+    demoUrl: "/demo/sunset-template",
   },
   {
     id: "modern-minimal",
     name: "Modern Minimal",
     description: "Clean, minimalist design for urban stays",
+    active: false,
   },
   {
     id: "cozy-cabin",
     name: "Cozy Cabin",
     description: "Rustic, cozy aesthetic for mountain retreats",
+    active: false,
   },
 ];
 
@@ -162,24 +166,47 @@ export function NewGuidebookDialog({
             <Label>Template</Label>
             <div className="grid gap-2">
               {TEMPLATES.map((t) => (
-                <button
+                <div
                   key={t.id}
-                  type="button"
-                  onClick={() => setTemplateId(t.id)}
                   className={`flex items-start gap-3 rounded-lg border p-3 text-left transition-colors ${
                     templateId === t.id
                       ? "border-primary bg-primary/5"
-                      : "border-border hover:bg-muted/50"
-                  }`}
+                      : "border-border"
+                  } ${t.active ? "hover:bg-muted/50" : "opacity-75"}`}
                 >
-                  <div className="h-8 w-8 rounded bg-primary/10 shrink-0" />
-                  <div>
-                    <p className="text-sm font-medium">{t.name}</p>
-                    <p className="text-xs text-muted-foreground">
-                      {t.description}
-                    </p>
-                  </div>
-                </button>
+                  <button
+                    type="button"
+                    disabled={!t.active}
+                    onClick={() => t.active && setTemplateId(t.id)}
+                    className="flex min-w-0 flex-1 items-start gap-3 text-left disabled:cursor-not-allowed"
+                  >
+                    <div className="h-8 w-8 shrink-0 rounded bg-primary/10" />
+                    <div className="min-w-0">
+                      <p className="flex items-center gap-2 text-sm font-medium">
+                        {t.name}
+                        {!t.active && (
+                          <span className="rounded-full bg-muted px-2 py-0.5 text-[10px] font-medium text-muted-foreground">
+                            Coming soon
+                          </span>
+                        )}
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        {t.description}
+                      </p>
+                    </div>
+                  </button>
+                  {t.demoUrl ? (
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      render={<a href={t.demoUrl} target="_blank" rel="noopener noreferrer" />}
+                    >
+                      <ExternalLink className="h-3.5 w-3.5" />
+                      Demo
+                    </Button>
+                  ) : null}
+                </div>
               ))}
             </div>
           </div>

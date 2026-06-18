@@ -426,6 +426,14 @@ const quickVariablesSettingsSchema = z
       .optional(),
   })
   .passthrough();
+const updateGuidebookHexColor = z.string().regex(/^#[0-9a-fA-F]{3,8}$/);
+const updateGuidebookGradientSchema = z
+  .object({
+    from: updateGuidebookHexColor,
+    to: updateGuidebookHexColor,
+    angle: z.number().min(0).max(360),
+  })
+  .nullable();
 
 export const updateGuidebookSchema = z.object({
   title: z.string().min(1).max(200).optional(),
@@ -442,10 +450,30 @@ export const updateGuidebookSchema = z.object({
   propertyId: z.string().uuid().nullable().optional(),
   branding: z
     .object({
-      logo_url: z.string().nullable().optional(),
-      primary_color: z.string().optional(),
-      secondary_color: z.string().optional(),
-      font_family: z.string().optional(),
+      logo_url: z.string().url().nullable().optional(),
+      primary_color: updateGuidebookHexColor.optional(),
+      secondary_color: updateGuidebookHexColor.optional(),
+      accent_color: updateGuidebookHexColor.optional(),
+      brand_gradient: updateGuidebookGradientSchema.optional(),
+      background_color: updateGuidebookHexColor.optional(),
+      background_gradient: updateGuidebookGradientSchema.optional(),
+      background_pattern: z
+        .enum(["none", "dots", "grid", "diagonal", "noise"])
+        .optional(),
+      background_pattern_strength: z.number().min(0).max(1).optional(),
+      font_family: z.string().max(80).optional(),
+      heading_font: z.string().max(80).optional(),
+      body_font: z.string().max(80).optional(),
+      heading_scale: z.number().min(0.3).max(4).optional(),
+      body_scale: z.number().min(0.3).max(4).optional(),
+      heading_weight: z.number().int().min(100).max(900).optional(),
+      body_weight: z.number().int().min(100).max(900).optional(),
+      heading_letter_spacing: z.number().min(-0.2).max(0.3).optional(),
+      body_letter_spacing: z.number().min(-0.2).max(0.3).optional(),
+      heading_line_height: z.number().min(0.7).max(2.5).optional(),
+      body_line_height: z.number().min(0.7).max(3).optional(),
+      icon_scale_feature: z.number().min(0.2).max(4).optional(),
+      icon_scale_nav: z.number().min(0.2).max(4).optional(),
       show_guestnix_branding: z.boolean().optional(),
     })
     .optional(),
