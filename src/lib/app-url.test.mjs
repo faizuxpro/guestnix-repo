@@ -50,3 +50,46 @@ test("browser app origin prefers the host where the auth flow started", () => {
     }
   }
 });
+
+test("browser app origin rejects localhost in production builds", () => {
+  const originalWindow = globalThis.window;
+  const originalNodeEnv = process.env.NODE_ENV;
+  const originalAppUrl = process.env.NEXT_PUBLIC_APP_URL;
+
+  Object.defineProperty(globalThis, "window", {
+    configurable: true,
+    value: {
+      location: {
+        origin: "https://localhost:57874",
+      },
+    },
+  });
+
+  process.env.NODE_ENV = "production";
+  process.env.NEXT_PUBLIC_APP_URL = "https://guestnix.com";
+
+  try {
+    const origin = getBrowserAppOrigin();
+    const callback = new URL(authCallbackUrl("/dashboard", origin));
+
+    assert.equal(origin, "https://guestnix.com");
+    assert.equal(callback.origin, "https://guestnix.com");
+  } finally {
+    process.env.NODE_ENV = originalNodeEnv;
+
+    if (originalAppUrl === undefined) {
+      delete process.env.NEXT_PUBLIC_APP_URL;
+    } else {
+      process.env.NEXT_PUBLIC_APP_URL = originalAppUrl;
+    }
+
+    if (originalWindow === undefined) {
+      delete globalThis.window;
+    } else {
+      Object.defineProperty(globalThis, "window", {
+        configurable: true,
+        value: originalWindow,
+      });
+    }
+  }
+});

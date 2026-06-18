@@ -58,7 +58,16 @@ export function getBrowserAppOrigin(): string {
     return getPublicAppOrigin();
   }
 
-  return normalizeOrigin(window.location.origin) ?? getPublicAppOrigin();
+  const browserOrigin = normalizeOrigin(window.location.origin);
+
+  if (
+    process.env.NODE_ENV === "production" &&
+    isLocalOrigin(browserOrigin)
+  ) {
+    return getPublicAppOrigin();
+  }
+
+  return browserOrigin ?? getPublicAppOrigin();
 }
 
 export function safeRelativePath(

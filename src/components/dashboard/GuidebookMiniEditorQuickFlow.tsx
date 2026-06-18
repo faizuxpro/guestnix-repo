@@ -1705,58 +1705,73 @@ function StepRail({
   onSelect: (id: StepId) => void;
 }) {
   return (
-    <div className="mt-3 overflow-x-auto pb-1">
-      <div className="flex min-w-max overflow-hidden rounded-lg border bg-white shadow-sm">
+    <div className="mt-3 pb-1">
+      <div className="flex w-full min-w-0 flex-col overflow-hidden rounded-[0.2857rem] border border-[rgba(34,36,38,.15)] bg-white shadow-[0_4px_6px_-1px_rgba(0,0,0,0.05)] lg:flex-row">
         {STEPS.map((step, index) => {
           const state = states[step.id];
           const completed = state === "complete";
           const missing = state === "missing";
           const active = index === activeIndex;
+          const visualState = active
+            ? "active"
+            : completed
+              ? "completed"
+              : missing
+                ? "missing"
+                : "future";
           return (
             <button
               key={step.id}
               type="button"
               onClick={() => onSelect(step.id)}
+              aria-current={active ? "step" : undefined}
+              style={{ zIndex: STEPS.length - index }}
               className={cn(
-                "group relative flex min-w-32 flex-1 items-center gap-2 border-r px-3 py-2 text-left transition-colors last:border-r-0",
-                completed && "bg-[#042129] text-white",
-                missing && "bg-amber-50 text-amber-950",
-                active && "bg-[#eafcf0] text-[#042129]",
-                !completed && !missing && !active && "bg-white text-foreground hover:bg-muted/40"
+                "group relative flex min-h-[68px] min-w-0 flex-1 basis-0 cursor-pointer items-center border-b border-[rgba(34,36,38,.15)] px-3 py-2.5 text-left transition-[background-color,box-shadow,opacity] duration-300 ease-in-out last:border-b-0 lg:min-h-[62px] lg:border-b-0 lg:border-r lg:px-2.5 lg:py-2 lg:last:border-r-0 xl:min-h-[68px] xl:px-3.5",
+                index < STEPS.length - 1 &&
+                  "after:absolute after:bottom-0 after:left-1/2 after:z-10 after:h-4 after:w-4 after:-translate-x-1/2 after:translate-y-1/2 after:rotate-45 after:border-b after:border-r after:border-[rgba(34,36,38,.15)] after:transition-colors after:duration-300 after:content-[''] lg:after:top-1/2 lg:after:right-0 lg:after:bottom-auto lg:after:left-auto lg:after:-translate-y-1/2 lg:after:translate-x-1/2 lg:after:rotate-[-45deg]",
+                visualState === "completed" && "bg-[#042129] text-white after:bg-[#042129]",
+                visualState === "active" &&
+                  "bg-[#eafcf0] text-[#042129] shadow-[inset_0_0_0_1px_rgba(111,239,139,0.35)] after:bg-[#eafcf0]",
+                visualState === "missing" && "bg-amber-50 text-amber-950 after:bg-amber-50",
+                visualState === "future" && "bg-white text-[#042129] opacity-60 after:bg-white hover:opacity-80"
               )}
             >
               <span
                 className={cn(
-                  "grid size-7 shrink-0 place-items-center rounded-md text-sm font-light transition-transform",
-                  completed
-                    ? "text-[#6fef8b]"
-                    : missing
-                      ? "bg-amber-100 text-amber-700 ring-1 ring-amber-200"
-                    : active
-                      ? "bg-white text-[#042129] shadow-sm group-hover:scale-105"
-                      : "text-muted-foreground"
+                  "relative z-20 mr-2 flex w-6 shrink-0 items-center justify-center text-[2rem] font-light leading-none text-[#042129]/25 transition-all duration-300 ease-out xl:mr-3 xl:w-7 xl:text-[2.25rem]",
+                  visualState === "completed" &&
+                    "scale-100 text-[#6fef8b]",
+                  visualState === "active" && "scale-105 font-medium text-[#042129]",
+                  visualState === "missing" && "text-[2rem] font-medium text-amber-600",
+                  visualState === "future" && "text-[#042129]/25"
                 )}
               >
-                {completed ? (
-                  <Check className="h-4 w-4 stroke-[3]" />
-                ) : missing ? (
+                {visualState === "completed" ? (
+                  <Check className="h-6 w-6 stroke-[3] xl:h-7 xl:w-7" />
+                ) : visualState === "missing" ? (
                   "?"
                 ) : (
                   index + 1
                 )}
               </span>
-              <span className="min-w-0">
-                <span className="block whitespace-nowrap text-sm font-semibold">
+              <span
+                className={cn(
+                  "relative z-20 min-w-0 flex-1 transition-transform duration-300 ease-out",
+                  visualState === "active" && "translate-x-1"
+                )}
+              >
+                <span className="block truncate text-[0.88rem] font-bold leading-tight xl:text-[0.95rem]">
                   {step.title}
                 </span>
                 <span
                   className={cn(
-                    "block whitespace-nowrap text-xs",
-                    completed
+                    "mt-0.5 block truncate text-[0.72rem] font-normal leading-tight transition-colors duration-300 xl:text-[0.8rem]",
+                    visualState === "completed"
                       ? "text-white/70"
-                      : missing
+                      : visualState === "missing"
                         ? "text-amber-700"
-                        : "text-muted-foreground"
+                        : "text-black/50"
                   )}
                 >
                   {missing ? "Missing" : step.description}
@@ -2153,7 +2168,7 @@ function TemplateStep(props: {
             className={cn(
               "group relative overflow-hidden rounded-xl border bg-white text-left transition-all",
               props.templateId === template.id && template.active
-                ? "border-primary shadow-sm ring-2 ring-primary/15"
+                ? "border-[#042129]/70 shadow-md ring-1 ring-[#042129]/15"
                 : "border-border hover:border-primary/40",
               !template.active && "opacity-75"
             )}
@@ -2164,18 +2179,29 @@ function TemplateStep(props: {
               onClick={() => template.active && props.setTemplateId(template.id)}
               className="block w-full text-left disabled:cursor-not-allowed"
             >
-              <div className="relative h-28 overflow-hidden">
+              <div className="relative aspect-[16/10] w-full overflow-hidden bg-muted/30">
                 <Image
                   src={template.image}
                   alt=""
                   fill
                   sizes="(max-width: 768px) 100vw, 210px"
-                  className="object-cover transition duration-500 group-hover:scale-105"
+                  className="scale-110 object-cover blur-md"
+                  aria-hidden="true"
                 />
-                <span
-                  className="absolute inset-x-0 bottom-0 h-1.5"
-                  style={{ backgroundColor: template.accent }}
+                <div className="absolute inset-0 bg-black/10" />
+                <Image
+                  src={template.image}
+                  alt=""
+                  fill
+                  sizes="(max-width: 768px) 100vw, 210px"
+                  className="object-contain"
                 />
+                {props.templateId === template.id && template.active ? (
+                  <Badge className="absolute left-2 top-2 gap-1 rounded-md bg-white/95 px-2 py-1 text-[11px] font-semibold text-[#042129] shadow-sm ring-1 ring-black/10 hover:bg-white/95">
+                    <Check className="h-3.5 w-3.5 text-[#d4a23a]" />
+                    Selected
+                  </Badge>
+                ) : null}
                 {!template.active ? (
                   <Badge
                     variant="secondary"
@@ -2189,18 +2215,12 @@ function TemplateStep(props: {
                 <div className="flex items-center justify-between gap-2">
                   <h3 className="truncate text-sm font-semibold">{template.name}</h3>
                   {props.templateId === template.id && template.active ? (
-                    <Check className="h-4 w-4 text-primary" />
+                    <span className="grid h-5 w-5 shrink-0 place-items-center rounded-full bg-[#042129] text-white">
+                      <Check className="h-4 w-4 stroke-[3]" />
+                    </span>
                   ) : null}
                 </div>
                 <p className="mt-1 text-xs text-muted-foreground">{template.description}</p>
-                <div className="mt-3 space-y-1.5">
-                  <span className="block h-1.5 w-10/12 rounded-full bg-muted" />
-                  <span className="block h-1.5 w-7/12 rounded-full bg-muted" />
-                  <span
-                    className="block h-1.5 w-5/12 rounded-full"
-                    style={{ backgroundColor: template.accent }}
-                  />
-                </div>
               </div>
             </button>
             <Button
@@ -2217,7 +2237,7 @@ function TemplateStep(props: {
               }
             >
               <ExternalLink className="h-4 w-4" />
-              {template.demoUrl ? "Open demo" : "Demo coming soon"}
+              {template.demoUrl ? "Open demo" : "Coming soon"}
             </Button>
           </article>
         ))}
