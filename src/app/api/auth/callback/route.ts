@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createServerClient } from "@supabase/ssr";
-import { safeRelativePath } from "@/lib/app-url";
+import { getAuthRedirectOrigin, safeRelativePath } from "@/lib/app-url";
 import { productEvents } from "@/lib/analytics/product";
 import { trackServerProductEvent } from "@/lib/analytics/posthog-server";
 import { syncProductUserProfile } from "@/lib/analytics/product-user";
@@ -31,14 +31,15 @@ function getEmailOtpType(value: string | null): EmailOtpType | null {
 }
 
 export async function GET(request: NextRequest) {
-  const { searchParams, origin } = new URL(request.url);
+  const { searchParams } = new URL(request.url);
   const code = searchParams.get("code");
   const tokenHash = searchParams.get("token_hash");
   const type = getEmailOtpType(searchParams.get("type"));
   const redirect = safeRelativePath(searchParams.get("redirect"));
+  const redirectOrigin = getAuthRedirectOrigin();
 
   if (code || (tokenHash && type)) {
-    const redirectUrl = new URL(redirect, origin);
+    const redirectUrl = new URL(redirect, redirectOrigin);
     const supabaseResponse = NextResponse.redirect(redirectUrl);
 
     const supabase = createServerClient(
@@ -67,7 +68,7 @@ export async function GET(request: NextRequest) {
 
     if (error) {
       return NextResponse.redirect(
-        new URL("/auth/verified?flow=error", origin)
+        new URL("/auth/verified?flow=error", redirectOrigin)
       );
     }
 
@@ -123,5 +124,7 @@ export async function GET(request: NextRequest) {
     return supabaseResponse;
   }
 
-  return NextResponse.redirect(new URL("/auth/verified?flow=error", origin));
+  return NextResponse.redirect(
+    new URL("/auth/verified?flow=error", redirectOrigin)
+  );
 }
