@@ -41,9 +41,9 @@ export function OnboardingPlanPicker() {
         templateId: "sunset-lakehouse",
       },
     });
-    setCreatingEditor(false);
 
     if (!result.ok) {
+      setCreatingEditor(false);
       toastApiError(result.error, { title: "Couldn't create guidebook" });
       return;
     }
@@ -98,6 +98,7 @@ export function OnboardingPlanPicker() {
             }
             onAdvancedEditor={() => void openAdvancedEditor()}
             onCancel={() => router.push("/dashboard")}
+            onGoToDashboard={() => router.push("/dashboard")}
           />
         </div>
       </div>

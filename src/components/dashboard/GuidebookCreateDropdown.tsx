@@ -61,9 +61,9 @@ export function GuidebookCreateDropdown({
         templateId: "sunset-lakehouse",
       },
     });
-    setCreatingAdvanced(false);
 
     if (!result.ok) {
+      setCreatingAdvanced(false);
       toastApiError(result.error, { title: "Couldn't create guidebook" });
       return;
     }

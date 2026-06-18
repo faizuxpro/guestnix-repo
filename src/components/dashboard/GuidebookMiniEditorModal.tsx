@@ -7,6 +7,7 @@ import {
   ArrowRight,
   ExternalLink,
   FileUp,
+  LayoutDashboard,
   Loader2,
   Paintbrush,
   Sparkles,
@@ -83,29 +84,26 @@ export function GuidebookMiniEditorModal({
 
   async function openFullEditor() {
     setCreatingEditor(true);
-    try {
-      const propertyId =
-        initialPropertyId !== "none" && initialPropertyId !== "new"
-          ? initialPropertyId
-          : undefined;
-      const result = await apiFetch<GuidebookResponse>("/api/guidebooks", {
-        method: "POST",
-        body: {
-          title: "Sunset Lake House Guide",
-          propertyId,
-          templateId: "sunset-lakehouse",
-        },
-      });
+    const propertyId =
+      initialPropertyId !== "none" && initialPropertyId !== "new"
+        ? initialPropertyId
+        : undefined;
+    const result = await apiFetch<GuidebookResponse>("/api/guidebooks", {
+      method: "POST",
+      body: {
+        title: "Sunset Lake House Guide",
+        propertyId,
+        templateId: "sunset-lakehouse",
+      },
+    });
 
-      if (!result.ok) {
-        toastApiError(result.error, { title: "Couldn't create guidebook" });
-        return;
-      }
-
-      router.push(`/dashboard/guidebooks/${result.data.id}/editor`);
-    } finally {
+    if (!result.ok) {
       setCreatingEditor(false);
+      toastApiError(result.error, { title: "Couldn't create guidebook" });
+      return;
     }
+
+    router.push(`/dashboard/guidebooks/${result.data.id}/editor`);
   }
 
   return (
@@ -127,6 +125,7 @@ export function GuidebookStartChoicePanel({
   onQuickStart,
   onAdvancedEditor,
   onCancel,
+  onGoToDashboard,
 }: {
   source?: string | null;
   compact?: boolean;
@@ -134,6 +133,7 @@ export function GuidebookStartChoicePanel({
   onQuickStart: () => void;
   onAdvancedEditor: () => void;
   onCancel?: () => void;
+  onGoToDashboard?: () => void;
 }) {
   return (
     <section
@@ -151,10 +151,20 @@ export function GuidebookStartChoicePanel({
             How do you want to start?
           </h1>
         </div>
-        {onCancel ? (
-          <Button variant="ghost" onClick={onCancel}>
-            Cancel
-          </Button>
+        {onCancel || onGoToDashboard ? (
+          <div className="flex shrink-0 flex-wrap items-center justify-end gap-2">
+            {onGoToDashboard ? (
+              <Button onClick={onGoToDashboard} className="gap-2">
+                <LayoutDashboard className="h-4 w-4" />
+                Go to dashboard
+              </Button>
+            ) : null}
+            {onCancel ? (
+              <Button variant="ghost" onClick={onCancel}>
+                Cancel
+              </Button>
+            ) : null}
+          </div>
         ) : null}
       </header>
 
@@ -272,7 +282,14 @@ function StartOptionCard({
                 : "bg-[#092629] text-white"
             )}
           >
-            {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : action}
+            {busy ? (
+              <>
+                <Loader2 className="h-4 w-4 animate-spin" />
+                Opening...
+              </>
+            ) : (
+              action
+            )}
             {!busy ? <ActionIcon className="h-4 w-4" /> : null}
           </span>
         </span>
@@ -297,10 +314,12 @@ function StartOptionCard({
   return (
     <button
       type="button"
+      disabled={busy}
       onClick={onClick}
       className={cn(
         "group relative flex min-h-0 flex-col overflow-hidden rounded-xl border p-5 text-left transition duration-200 hover:-translate-y-0.5 hover:shadow-[0_18px_45px_-28px_rgba(2,12,27,0.55)]",
-        palette.card
+        palette.card,
+        busy && "cursor-wait opacity-80 hover:translate-y-0"
       )}
     >
       {content}

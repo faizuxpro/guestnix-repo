@@ -10,6 +10,7 @@ import {
   EyeOff,
   ExternalLink,
   Globe,
+  LayoutDashboard,
   Loader2,
   Lock,
   Monitor,
@@ -452,6 +453,10 @@ export function EditorToolbar({
                 Desktop preview
               </DropdownMenuItem>
               <DropdownMenuSeparator />
+              <DropdownMenuItem render={<Link href="/dashboard" />}>
+                <LayoutDashboard className="h-3.5 w-3.5" />
+                Go to dashboard
+              </DropdownMenuItem>
               <DropdownMenuItem render={<Link href={settingsHref} />}>
                 <Settings className="h-3.5 w-3.5" />
                 All settings
