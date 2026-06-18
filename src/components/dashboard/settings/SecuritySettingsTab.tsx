@@ -11,7 +11,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { authCallbackUrl, getBrowserAppOrigin } from "@/lib/app-url";
+import { authCallbackUrl } from "@/lib/app-url";
 import { createBrowserClient } from "@/lib/supabase/client";
 
 export function SecuritySettingsTab({ email }: { email: string }) {
@@ -21,9 +21,8 @@ export function SecuritySettingsTab({ email }: { email: string }) {
 
   async function sendResetLink() {
     setSending(true);
-    const callbackOrigin = getBrowserAppOrigin();
     const { error } = await supabase.auth.resetPasswordForEmail(email, {
-      redirectTo: authCallbackUrl("/reset-password", callbackOrigin),
+      redirectTo: authCallbackUrl("/reset-password"),
     });
     setSending(false);
 

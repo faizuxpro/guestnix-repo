@@ -20,7 +20,6 @@ import { APP_NAME } from "@/lib/constants";
 import {
   authCallbackUrl,
   authStatusPath,
-  getBrowserAppOrigin,
 } from "@/lib/app-url";
 import { productEvents } from "@/lib/analytics/product";
 import {
@@ -104,7 +103,6 @@ export default function SignupPage() {
 
     setSignupNotice(null);
     const signupEmail = email.trim();
-    const callbackOrigin = getBrowserAppOrigin();
 
     const { data, error } = await supabase.auth.signUp({
       email: signupEmail,
@@ -112,8 +110,7 @@ export default function SignupPage() {
       options: {
         data: { full_name: fullName, account_type: accountType },
         emailRedirectTo: authCallbackUrl(
-          authStatusPath("signup", "/login?verified=email"),
-          callbackOrigin
+          authStatusPath("signup", "/login?verified=email")
         ),
       },
     });
@@ -134,8 +131,6 @@ export default function SignupPage() {
   }
 
   async function handleGoogleLogin() {
-    const callbackOrigin = getBrowserAppOrigin();
-
     trackProductEvent(productEvents.signupStarted, {
       method: "google_oauth",
       source: "signup_form",
@@ -148,7 +143,7 @@ export default function SignupPage() {
     const { error } = await supabase.auth.signInWithOAuth({
       provider: "google",
       options: {
-        redirectTo: authCallbackUrl("/onboarding", callbackOrigin),
+        redirectTo: authCallbackUrl("/onboarding"),
       },
     });
 

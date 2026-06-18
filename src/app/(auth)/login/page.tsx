@@ -21,7 +21,6 @@ import { APP_NAME } from "@/lib/constants";
 import {
   authCallbackUrl,
   authStatusPath,
-  getBrowserAppOrigin,
   safeRelativePath,
 } from "@/lib/app-url";
 import { Loader2 } from "lucide-react";
@@ -71,12 +70,10 @@ function LoginForm() {
   }
 
   async function handleGoogleLogin() {
-    const callbackOrigin = getBrowserAppOrigin();
-
     const { error } = await supabase.auth.signInWithOAuth({
       provider: "google",
       options: {
-        redirectTo: authCallbackUrl(redirect, callbackOrigin),
+        redirectTo: authCallbackUrl(redirect),
       },
     });
 
@@ -92,13 +89,11 @@ function LoginForm() {
     }
 
     setLoading(true);
-    const callbackOrigin = getBrowserAppOrigin();
     const { error } = await supabase.auth.signInWithOtp({
       email,
       options: {
         emailRedirectTo: authCallbackUrl(
-          authStatusPath("magic", redirect),
-          callbackOrigin
+          authStatusPath("magic", redirect)
         ),
       },
     });

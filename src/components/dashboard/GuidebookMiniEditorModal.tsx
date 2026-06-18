@@ -218,27 +218,23 @@ function StartOptionCard({
     fast: {
       card: "border-[#b8dbd2] bg-[#f0f8f5] hover:border-[#0e5b55] hover:bg-[#eefaf4]",
       icon: "bg-[#0b3436] text-[#9bf0a7]",
-      strip: "bg-[#0b3436]",
       meta: "Ready in minutes",
     },
     creative: {
       card: "border-[#d9dde5] bg-white hover:border-[#8b6f47] hover:bg-[#fffaf0]",
       icon: "bg-[#f2efe9] text-[#6f4f1f]",
-      strip: "bg-[#d7a34b]",
       meta: "Most flexible",
     },
     ai: {
       card: "border-[#dce2e8] bg-[#f6f8fa] opacity-80",
       icon: "bg-white text-[#4b5563]",
-      strip: "bg-[#98a2b3]",
       meta: "Import assistant",
     },
   }[tone];
 
   const content = (
     <>
-      <span className={cn("absolute inset-x-0 top-0 h-1", palette.strip)} />
-      <span className="flex items-start justify-between gap-3">
+      <span className="flex items-start justify-between gap-4">
         <span className={cn("grid size-11 place-items-center rounded-lg", palette.icon)}>
           {tone === "ai" ? (
             <span className="relative">
@@ -260,25 +256,26 @@ function StartOptionCard({
         )}
       </span>
 
-      <span className="mt-auto block">
+      <span className="mt-6 flex flex-1 flex-col">
         <span className="block font-heading text-xl font-semibold leading-tight text-[#092629]">
           {title}
         </span>
         <span className="mt-2 block text-sm leading-6 text-muted-foreground">
           {description}
         </span>
-      </span>
-
-      <span
-        className={cn(
-          "mt-5 inline-flex items-center gap-2 rounded-full px-3 py-1.5 text-sm font-semibold",
-          disabled
-            ? "bg-white text-muted-foreground ring-1 ring-border"
-            : "bg-[#092629] text-white"
-        )}
-      >
-        {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : action}
-        {!busy ? <ActionIcon className="h-4 w-4" /> : null}
+        <span className="mt-auto pt-5">
+          <span
+            className={cn(
+              "inline-flex items-center gap-2 rounded-full px-3 py-1.5 text-sm font-semibold",
+              disabled
+                ? "bg-white text-muted-foreground ring-1 ring-border"
+                : "bg-[#092629] text-white"
+            )}
+          >
+            {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : action}
+            {!busy ? <ActionIcon className="h-4 w-4" /> : null}
+          </span>
+        </span>
       </span>
     </>
   );

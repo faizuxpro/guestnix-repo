@@ -53,21 +53,19 @@ export function absoluteAppUrl(path = "/"): string {
   return `${getPublicAppOrigin()}${normalizedPath}`;
 }
 
-export function getBrowserAppOrigin(): string {
-  if (typeof window === "undefined") {
-    return getPublicAppOrigin();
+export function getAuthRedirectOrigin(): string {
+  const canonicalOrigin = normalizeOrigin(process.env.NEXT_PUBLIC_CANONICAL_HOST);
+  const configuredOrigin = normalizeOrigin(process.env.NEXT_PUBLIC_APP_URL);
+
+  if (canonicalOrigin && !isLocalOrigin(canonicalOrigin)) {
+    return canonicalOrigin;
   }
 
-  const browserOrigin = normalizeOrigin(window.location.origin);
-
-  if (
-    process.env.NODE_ENV === "production" &&
-    isLocalOrigin(browserOrigin)
-  ) {
-    return getPublicAppOrigin();
+  if (configuredOrigin && !isLocalOrigin(configuredOrigin)) {
+    return configuredOrigin;
   }
 
-  return browserOrigin ?? getPublicAppOrigin();
+  return PRODUCTION_APP_ORIGIN;
 }
 
 export function safeRelativePath(
@@ -102,14 +100,8 @@ export function authStatusPath(
   return `/auth/verified?${params.toString()}`;
 }
 
-export function authCallbackUrl(
-  redirect = "/dashboard",
-  origin?: string | null
-): string {
-  const url = new URL(
-    "/api/auth/callback",
-    normalizeOrigin(origin) ?? getPublicAppOrigin()
-  );
+export function authCallbackUrl(redirect = "/dashboard"): string {
+  const url = new URL("/api/auth/callback", getAuthRedirectOrigin());
   url.searchParams.set("redirect", safeRelativePath(redirect));
   return url.toString();
 }
