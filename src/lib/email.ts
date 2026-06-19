@@ -23,6 +23,7 @@ type BrandedEmailInput = {
 
 const RESEND_ENDPOINT = "https://api.resend.com/emails";
 const BREVO_ENDPOINT = "https://api.brevo.com/v3/smtp/email";
+const MAILJET_ENDPOINT = "https://api.mailjet.com/v3.1/send";
 const PRODUCTION_ASSET_ORIGIN = "https://guestnix.com";
 const BRAND_LOGO_PATH = "/brand/Guestnix full logo (for dark bg).svg";
 const EMAIL_FONT_STACK =
@@ -45,16 +46,26 @@ const EMAIL_BRAND = {
   softMuted: "#8A9BA3",
 } as const;
 
-type EmailProvider = "resend" | "brevo";
+type EmailProvider = "resend" | "brevo" | "mailjet";
 
 function emailProvider(): EmailProvider {
   const configured = process.env.EMAIL_PROVIDER?.trim().toLowerCase();
-  if (configured === "resend" || configured === "brevo") {
+  if (
+    configured === "resend" ||
+    configured === "brevo" ||
+    configured === "mailjet"
+  ) {
     return configured;
+  }
+  if (
+    process.env.MAILJET_API_KEY?.trim() &&
+    process.env.MAILJET_SECRET_KEY?.trim()
+  ) {
+    return "mailjet";
   }
   if (process.env.BREVO_API_KEY?.trim()) return "brevo";
   if (process.env.RESEND_API_KEY?.trim()) return "resend";
-  return "brevo";
+  return "mailjet";
 }
 
 function appName() {
@@ -92,12 +103,16 @@ function parseAddress(value: string) {
 }
 
 function emailFrom(provider: EmailProvider) {
+  const providerFrom =
+    provider === "brevo"
+      ? process.env.BREVO_FROM_EMAIL?.trim()
+      : provider === "resend"
+        ? process.env.RESEND_FROM_EMAIL?.trim()
+        : process.env.MAILJET_FROM_EMAIL?.trim();
   const value =
     process.env.EMAIL_FROM?.trim() ||
-    (provider === "brevo"
-      ? process.env.BREVO_FROM_EMAIL?.trim()
-      : process.env.RESEND_FROM_EMAIL?.trim()) ||
-    `${appName()} <onboarding@resend.dev>`;
+    providerFrom ||
+    `${appName()} <no-reply@example.com>`;
 
   return {
     raw: value,
@@ -110,6 +125,10 @@ export async function sendEmail(input: SendEmailInput) {
 
   if (provider === "brevo") {
     return sendBrevoEmail(input);
+  }
+
+  if (provider === "mailjet") {
+    return sendMailjetEmail(input);
   }
 
   return sendResendEmail(input);
@@ -304,6 +323,48 @@ async function sendBrevoEmail(input: SendEmailInput) {
   if (!response.ok) {
     const body = await response.text().catch(() => "");
     throw new Error(`Brevo email failed (${response.status}): ${body}`);
+  }
+
+  return { skipped: false };
+}
+
+async function sendMailjetEmail(input: SendEmailInput) {
+  const apiKey = process.env.MAILJET_API_KEY?.trim();
+  const secretKey = process.env.MAILJET_SECRET_KEY?.trim();
+  if (!apiKey || !secretKey) {
+    console.warn(
+      "Skipping email send: MAILJET_API_KEY or MAILJET_SECRET_KEY is not set"
+    );
+    return { skipped: true };
+  }
+  const from = emailFrom("mailjet");
+  const authorization = Buffer.from(`${apiKey}:${secretKey}`).toString("base64");
+
+  const response = await fetch(MAILJET_ENDPOINT, {
+    method: "POST",
+    headers: {
+      Authorization: `Basic ${authorization}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      Messages: [
+        {
+          From: {
+            Email: from.parsed.email,
+            Name: from.parsed.name,
+          },
+          To: [{ Email: input.to }],
+          Subject: input.subject,
+          TextPart: input.text,
+          HTMLPart: input.html,
+        },
+      ],
+    }),
+  });
+
+  if (!response.ok) {
+    const body = await response.text().catch(() => "");
+    throw new Error(`Mailjet email failed (${response.status}): ${body}`);
   }
 
   return { skipped: false };

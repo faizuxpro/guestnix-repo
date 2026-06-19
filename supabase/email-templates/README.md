@@ -96,6 +96,13 @@ In Supabase Dashboard:
 6. Use your email provider's SMTP values.
 7. Save changes.
 
+For Mailjet, the SMTP values are:
+
+- Host: `in-v3.mailjet.com`
+- Port: `587`
+- Username: your Mailjet API key
+- Password: your Mailjet secret key
+
 If you do not configure custom SMTP, the emails can still use the branded HTML
 templates, but the sender may still be Supabase's default auth sender.
 
