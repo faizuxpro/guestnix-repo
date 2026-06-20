@@ -1,5 +1,19 @@
 import type { NextConfig } from "next";
 import { withSentryConfig } from "@sentry/nextjs";
+import { setupHoneybadger } from "@honeybadger-io/nextjs";
+
+const honeybadgerApiKey =
+  process.env.HONEYBADGER_API_KEY || process.env.NEXT_PUBLIC_HONEYBADGER_API_KEY;
+const honeybadgerAssetsUrl =
+  process.env.NEXT_PUBLIC_HONEYBADGER_ASSETS_URL ||
+  process.env.NEXT_PUBLIC_APP_URL;
+const honeybadgerRevision =
+  process.env.NEXT_PUBLIC_HONEYBADGER_REVISION ||
+  process.env.NEXT_PUBLIC_APP_VERSION ||
+  process.env.HEROKU_SLUG_COMMIT ||
+  process.env.SOURCE_VERSION ||
+  process.env.VERCEL_GIT_COMMIT_SHA ||
+  process.env.GITHUB_SHA;
 
 const nextConfig: NextConfig = {
   turbopack: {
@@ -24,7 +38,25 @@ const nextConfig: NextConfig = {
   },
 };
 
-export default withSentryConfig(nextConfig, {
+const nextConfigWithHoneybadger = setupHoneybadger(
+  nextConfig,
+  honeybadgerApiKey && honeybadgerAssetsUrl
+    ? {
+        silent: !process.env.CI,
+        disableSourceMapUpload: false,
+        webpackPluginOptions: {
+          apiKey: honeybadgerApiKey,
+          assetsUrl: honeybadgerAssetsUrl,
+          ...(honeybadgerRevision ? { revision: honeybadgerRevision } : {}),
+        },
+      }
+    : {
+        silent: !process.env.CI,
+        disableSourceMapUpload: true,
+      },
+);
+
+export default withSentryConfig(nextConfigWithHoneybadger, {
   org: process.env.SENTRY_ORG,
   project: process.env.SENTRY_PROJECT,
   authToken: process.env.SENTRY_AUTH_TOKEN,
